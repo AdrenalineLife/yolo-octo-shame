@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Simple IRC Bot for Twitch.tv
 Developed by Aidan Thomson <aidraj0@gmail.com>
@@ -22,7 +23,7 @@ class Roboraj:
         sock = self.socket
         config = self.config
 
-        history_check_time = 7  # ÷åðåç ñêîëüêî ñåê. ïðîâåðÿòü ñîñòîÿíèå ñòðèìîâ
+        history_check_time = 7  # Ñ‡ÐµÑ€ÐµÐ· ÑÐºÐ¾Ð»ÑŒÐºÐ¾ ÑÐµÐº. Ð¿Ñ€Ð¾Ð²ÐµÑ€ÑÑ‚ÑŒ ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ðµ ÑÑ‚Ñ€Ð¸Ð¼Ð¾Ð²
         history_last_time = time.time()
 
         while True:
@@ -32,7 +33,7 @@ class Roboraj:
                 data = 'empty'
 
 
-            # ïðîâåðêà ñîñòîÿíèÿ ñòðèìîâ (ôóíêöèÿ history)
+            # Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÑÐ¾ÑÑ‚Ð¾ÑÐ½Ð¸Ñ ÑÑ‚Ñ€Ð¸Ð¼Ð¾Ð² (Ñ„ÑƒÐ½ÐºÑ†Ð¸Ñ history)
             if time.time() - history_last_time >= history_check_time:
                 print('checking history >>>')
                 history(['check'], 'chan', 'username')
