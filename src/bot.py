@@ -1,12 +1,15 @@
 """
 Simple IRC Bot for Twitch.tv
-
 Developed by Aidan Thomson <aidraj0@gmail.com>
 """
+
+import time
 
 import src.lib.irc as irc_
 from src.lib.functions_general import *
 import src.lib.functions_commands as f_commands
+from src.lib.commands.history import history
+
 
 class Roboraj:
     def __init__(self, config):
@@ -19,11 +22,21 @@ class Roboraj:
         sock = self.socket
         config = self.config
 
+        history_check_time = 7  # через сколько сек. проверять состояние стримов
+        history_last_time = time.time()
+
         while True:
             try:
                 data = sock.recv(config['socket_buffer_size']).decode().rstrip()
             except Exception:
                 data = 'empty'
+
+
+            # проверка состояния стримов (функция history)
+            if time.time() - history_last_time >= history_check_time:
+                print('checking history >>>')
+                history(['check'], 'chan', 'username')
+                history_last_time = time.time()
 
             data_list = data.split('\r\n')
 
@@ -57,7 +70,6 @@ class Roboraj:
                         command = message
                         command_name = command.split(' ')[0]
 
-                        #if f_commands.has_access(command_name, username, channel):
                         if f_commands.check_returns_function(command_name):
                             if f_commands.check_has_correct_args(command, command_name):
                                 args = command.split(' ')
@@ -79,9 +91,15 @@ class Roboraj:
                                     f_commands.update_last_used(command_name, channel)
 
                                     if result:
-                                        resp = result.replace('(sender)', username)
-                                        pbot(resp, channel)
-                                        irc.send_message(channel, resp)
+                                        if type(result) == list:
+                                            for r in result:
+                                                resp = r.replace('(sender)', username)
+                                                pbot(resp, channel)
+                                                irc.send_message(channel, resp)
+                                        else:
+                                            resp = result.replace('(sender)', username)
+                                            pbot(resp, channel)
+                                            irc.send_message(channel, resp)
 
                         else:
                             if f_commands.is_on_cooldown(command_name, channel):
@@ -101,5 +119,3 @@ class Roboraj:
 
                                 pbot(resp, channel)
                                 irc.send_message(channel, resp)
-                        #else:
-                            #pbot("User '%s' do not have access to the command '%s'" % (username, command_name), channel)
