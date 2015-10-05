@@ -9,7 +9,6 @@ import time
 import src.lib.irc as irc_
 from src.lib.functions_general import *
 import src.lib.functions_commands as f_commands
-from src.lib.commands.history import history
 
 
 class Roboraj:
@@ -23,21 +22,11 @@ class Roboraj:
         sock = self.socket
         config = self.config
 
-        history_check_time = 7  # через сколько сек. проверять состояние стримов
-        history_last_time = time.time()
-
         while True:
             try:
                 data = sock.recv(config['socket_buffer_size']).decode().rstrip()
             except Exception:
                 data = 'empty'
-
-
-            # проверка состояния стримов (функция history)
-            if time.time() - history_last_time >= history_check_time:
-                print('checking history >>>')
-                history(['check'], 'chan', 'username')
-                history_last_time = time.time()
 
             data_list = data.split('\r\n')
 
