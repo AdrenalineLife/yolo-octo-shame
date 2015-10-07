@@ -28,6 +28,10 @@ class Roboraj:
             except Exception:
                 data = 'empty'
 
+            if time.time() - f_commands.commands['!ragnaros']['time'] >= f_commands.commands['!ragnaros']['ch_time']:
+                f_commands.commands['!ragnaros']['function'](['check'], '#c_a_k_e', '')
+                f_commands.commands['!ragnaros']['time'] = time.time()
+
             data_list = data.split('\r\n')
 
             for data_line in data_list:
@@ -54,6 +58,8 @@ class Roboraj:
                     username = message_dict['username']
 
                     ppi(channel, message, username)
+
+                    f_commands.commands['!ragnaros']['function'](['add', username], '#c_a_k_e', '')
 
                     # check if message is a command with no arguments
                     if f_commands.is_valid_command(message) or f_commands.is_valid_command(message.split(' ')[0]):
