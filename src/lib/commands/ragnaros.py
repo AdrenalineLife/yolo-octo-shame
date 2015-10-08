@@ -11,7 +11,7 @@ hit_freq = 5*60  # ban every hit_freq seconds
 last_time_hit = 0
 get_in_trap_time = 30
 ban_time = 2*60
-turned = False
+turned_on = False
 victims = dict()
 
 allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja')
@@ -35,7 +35,7 @@ switch_state = lambda x: True if x == 'on' else False
 
 
 def ragnaros(args, chan, username):
-    global turned
+    global turned_on
     global last_time_hit
     if chan == '#c_a_k_e':
         if args and args[0] == 'check':
@@ -46,11 +46,10 @@ def ragnaros(args, chan, username):
 
             #print(json.dumps(victims, indent=4))
 
-            if turned:
-                if time.time() - last_time_hit >= hit_freq:
-                    #print('>> It is time to ban someone!')
-                    last_time_hit = time.time()
-                    return make_hit()
+            if turned_on and time.time() - last_time_hit >= hit_freq:
+                #print('>> It is time to ban someone!')
+                last_time_hit = time.time()
+                return make_hit()
             return ''
 
         if args and args[0] == 'add':
@@ -59,10 +58,10 @@ def ragnaros(args, chan, username):
             return ''
 
         if args and args[0] in ('on', 'off') and username in allowed:
-            turned = switch_state(args[0])
+            turned_on = switch_state(args[0])
             return [
                 '/color {0}'.format(color),
-                say[0] if turned else say[1],
+                say[0] if turned_on else say[1],
                 '/color Blue'
             ]
 

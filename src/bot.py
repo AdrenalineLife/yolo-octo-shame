@@ -29,8 +29,11 @@ class Roboraj:
                 data = 'empty'
 
             if time.time() - f_commands.commands['!ragnaros']['time'] >= f_commands.commands['!ragnaros']['ch_time']:
-                f_commands.commands['!ragnaros']['function'](['check'], '#c_a_k_e', '')
+                ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], '#c_a_k_e', '')
                 f_commands.commands['!ragnaros']['time'] = time.time()
+                if ragn_resp:
+                    for r in ragn_resp:
+                        irc.send_message('#c_a_k_e', r)
 
             data_list = data.split('\r\n')
 
