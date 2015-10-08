@@ -61,7 +61,7 @@ class Roboraj:
 
                     f_commands.commands['!ragnaros']['function'](['add', username], '#c_a_k_e', '')
 
-                    # check if message is a command with no arguments
+                    # check if message is a command with no arguments.
                     if f_commands.is_valid_command(message) or f_commands.is_valid_command(message.split(' ')[0]):
                         command = message
                         command_name = command.split(' ')[0]

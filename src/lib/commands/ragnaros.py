@@ -36,8 +36,10 @@ switch_state = lambda x: True if x == 'on' else False
 
 def ragnaros(args, chan, username):
     global turned
+    global last_time_hit
     if chan == '#c_a_k_e':
         if args and args[0] == 'check':
+            #print('>>> checking')
             remove = [x for x in victims if time.time() - victims[x] >= get_in_trap_time]
             for x in remove:
                 victims.pop(x, None)
@@ -46,6 +48,8 @@ def ragnaros(args, chan, username):
 
             if turned:
                 if time.time() - last_time_hit >= hit_freq:
+                    #print('>> It is time to ban someone!')
+                    last_time_hit = time.time()
                     return make_hit()
             return ''
 
