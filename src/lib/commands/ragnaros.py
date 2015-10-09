@@ -19,13 +19,14 @@ protected = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'seeskixbocta', 'moobot', 'mirr
 
 say = ('/me Рагнарос выходит на стол!', '/me Рагнарос покидает доску!')
 
+
 # ban someone
-def make_hit():
+def make_hit(t=ban_time):
     if victims:
         vic = random.choice(list(victims.keys()))
-        #print('>>>' + vic)
+        #print('>>> ' + vic + ' ' + str(t))
         return [
-            '/timeout {0} {1}'.format(vic, ban_time),
+            '/timeout {0} {1}'.format(vic, t),
             'Рагнарос попал в тебя, {0}!'.format(vic)
         ]
     else:
@@ -51,7 +52,6 @@ def ragnaros(args, chan, username):
                 #print(json.dumps(victims, indent=4))
 
                 if turned_on and time.time() - last_time_hit >= hit_freq:
-                    #print('>> It is time to ban someone!')
                     last_time_hit = time.time()
                     return make_hit()
                 return ''
@@ -63,11 +63,21 @@ def ragnaros(args, chan, username):
 
             if args[0] in ('on', 'off') and username in allowed:
                 turned_on = switch_state(args[0])
+                last_time_hit = time.time()
                 return [
                     '/color {0}'.format(color),
                     say[0] if turned_on else say[1],
                     '/color Blue'
                 ]
+
+            try:
+                sec = int(args[0])
+            except ValueError:
+                return ''
+            if sec < 5:
+                sec = 5
+            if username in allowed:
+                make_hit(sec)
 
             if len(args) == 2 and username in allowed:
                 if args[0] in ('cd', 'bantime'):
