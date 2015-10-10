@@ -4,7 +4,7 @@ __author__ = 'Life'
 import requests
 import json
 
-err = '¯\(ツ)/¯'
+err = 'Ошибочка...' #'¯\(ツ)/¯'
 
 
 def dubsong(args, chan, username):
@@ -15,13 +15,13 @@ def dubsong(args, chan, username):
         except Exception:
             return err
 
-        #print(json.dumps(resp, indent=4))
+        print(json.dumps(resp, indent=4))
 
         if resp['message'] != 'OK':
             return err
-        else:
-            return 'Сейчас играет на dubtrack: %s' % resp['data']['currentSong']['name']
+        song = resp['data']['currentSong']
+        return 'Сейчас играет на dubtrack: %s' % song['name'] if song is not None else 'Ничего не играет'
     else:
         return ''
 
-#dubsong(1, '#nastjanastja', 1)
+#print(dubsong(1, '#nastjanastja', 1))
