@@ -6,8 +6,9 @@ import threading
 
 
 class irc:
-    def __init__(self, config):
+    def __init__(self, config, w=False):
         self.config = config
+        self.whisper = w
 
     def check_for_message(self, data):
         if re.match(
@@ -27,6 +28,7 @@ class irc:
     def check_for_ping(self, data):
         if data[:4] == "PING":
             self.sock.send('PONG tmi.twitch.tv\r\n'.encode())
+            #print('sending PONG')
 
     def get_message(self, data):
         return {
@@ -44,17 +46,22 @@ class irc:
     def send_message(self, channel, message):
         self.sock.send('PRIVMSG {0} :{1}\n'.format(channel, message).encode())
 
+    def send_whisper(self, username, message):
+        self.sock.send('PRIVMSG #jtv :/w {0} {1}\n'.format(username, message).encode())
+
     def get_irc_socket_object(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)  # default 10
 
         self.sock = sock
+        serv = self.config['server_w'] if self.whisper else self.config['server']
 
         try:
-            sock.connect((self.config['server'], self.config['port']))
+            sock.connect((serv, self.config['port']))
         except:
-            pp('Cannot connect to server (%s:%s).' % (self.config['server'], self.config['port']), 'error')
-            sys.exit()
+            pp('Cannot connect to server (%s:%s).' % (serv, self.config['port']), 'error')
+            if not self.whisper:
+                sys.exit()
 
         sock.settimeout(None)
 
@@ -66,7 +73,11 @@ class irc:
             pp('Login successful.')
         else:
             pp('Login unsuccessful. (hint: make sure your oauth token is set in self.config/self.config.py).', 'error')
-            sys.exit()
+            if not self.whisper:
+                sys.exit()
+
+        if self.whisper:
+            sock.send('CAP REQ :twitch.tv/commands\r\n'.encode())
 
         # start threads for channels that have cron messages to run
         """for channel in self.config['channels']:
@@ -74,7 +85,8 @@ class irc:
                 if self.config['cron'][channel]['run_cron']:
                     thread.start_new_thread(cron.cron(self, channel).run, ())"""
 
-        self.join_channels(self.channels_to_string(self.config['channels']))
+        if not self.whisper:
+            self.join_channels(self.channels_to_string(self.config['channels']))
         sock.settimeout(0)
 
         return sock

@@ -17,10 +17,25 @@ class Roboraj:
         self.irc = irc_.irc(config)
         self.socket = self.irc.get_irc_socket_object()
 
+        self.irc_w = irc_.irc(config, True)
+        self.socket_w = self.irc_w.get_irc_socket_object()
+
+    def check_for_whisper(self, msg):
+        is_whisper = False
+        if msg.startswith('/w'):
+            msg = msg[2:].strip(' ')
+            is_whisper = True
+        return (is_whisper, msg)
+
     def run(self):
         irc = self.irc
         sock = self.socket
+
+        irc_w = self.irc_w
+        sock_w = self.socket_w
         config = self.config
+
+        say_cd = 'Команда будет доступна через {0} сек'
 
         while True:
             try:
@@ -28,12 +43,22 @@ class Roboraj:
             except Exception:
                 data = 'empty'
 
+            try:
+                data_w = sock_w.recv(config['socket_buffer_size']).decode().rstrip()
+            except Exception:
+                data_w = 'empty'
+
+            irc_w.check_for_ping(data_w)
+
             if time.time() - f_commands.commands['!ragnaros']['time'] >= f_commands.commands['!ragnaros']['ch_time']:
+                #a = time.time()
                 ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], '#c_a_k_e', '')
                 f_commands.commands['!ragnaros']['time'] = time.time()
                 if ragn_resp:
                     for r in ragn_resp:
                         irc.send_message('#c_a_k_e', r)
+                        pbot(r, '#c_a_k_e')
+                #print(time.time() - a)
 
             data_list = data.split('\r\n')
 
@@ -62,7 +87,9 @@ class Roboraj:
 
                     ppi(channel, message, username)
 
-                    f_commands.commands['!ragnaros']['function'](['add', username], '#c_a_k_e', '')
+                    #a = time.time()
+                    f_commands.commands['!ragnaros']['function'](['add', username], channel, '')
+                    #print(time.time() - a)
 
                     # check if message is a command with no arguments.
                     if f_commands.is_valid_command(message) or f_commands.is_valid_command(message.split(' ')[0]):
@@ -75,9 +102,10 @@ class Roboraj:
                                 del args[0]
 
                                 if f_commands.is_on_cooldown(command_name, channel):
+                                    sec_remaining = f_commands.get_cooldown_remaining(command_name, channel)
+                                    irc_w.send_whisper(username, say_cd.format(sec_remaining))
                                     pbot('Command is on cooldown. (%s) (%s) (%ss remaining)' % (
-                                        command_name, username,
-                                        f_commands.get_cooldown_remaining(command_name, channel)),
+                                        command_name, username, sec_remaining),
                                         channel
                                         )
                                 else:
@@ -94,23 +122,33 @@ class Roboraj:
                                             for r in result:
                                                 resp = r.replace('(sender)', username)
                                                 pbot(resp, channel)
-                                                irc.send_message(channel, resp)
+                                                is_whisp, resp = self.check_for_whisper(resp)
+                                                if is_whisp:
+                                                    irc_w.send_whisper(username, resp)
+                                                else:
+                                                    irc.send_message(channel, resp)
                                         else:
                                             resp = result.replace('(sender)', username)
                                             pbot(resp, channel)
-                                            irc.send_message(channel, resp)
+                                            is_whisp, resp = self.check_for_whisper(resp)
+                                            if is_whisp:
+                                                irc_w.send_whisper(username, resp)
+                                            else:
+                                                irc.send_message(channel, resp)
 
                         else:
                             if f_commands.is_on_cooldown(command_name, channel):
+                                sec_remaining = f_commands.get_cooldown_remaining(command_name, channel)
+                                irc_w.send_whisper(username, say_cd.format(sec_remaining))
                                 pbot('Command is on cooldown. (%s) (%s) (%ss remaining)' % (
-                                    command_name, username, f_commands.get_cooldown_remaining(command_name, channel)),
-                                     channel
-                                     )
+                                    command_name, username, sec_remaining),
+                                    channel
+                                    )
                             elif f_commands.check_has_return(command_name):
                                 pbot('Command is valid and not on cooldown. (%s) (%s)' % (
                                     command_name, username),
-                                     channel
-                                     )
+                                    channel
+                                    )
                                 f_commands.update_last_used(command_name, channel)
 
                                 resp = f_commands.get_return(command_name).replace('(sender)', username)
