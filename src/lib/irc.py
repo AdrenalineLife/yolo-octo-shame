@@ -46,8 +46,8 @@ class irc:
     def send_message(self, channel, message):
         self.sock.send('PRIVMSG {0} :{1}\n'.format(channel, message).encode())
 
-    def send_whisper(self, username, message):
-        self.sock.send('PRIVMSG #jtv :/w {0} {1}\n'.format(username, message).encode())
+    def send_whisper(self, message):
+        self.sock.send('PRIVMSG #jtv :/w {0}\n'.format(message).encode())
 
     def get_irc_socket_object(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
