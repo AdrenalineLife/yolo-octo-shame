@@ -17,8 +17,12 @@ class Duel(object):
 
     @staticmethod
     def user_status(user, chan_name):
-        chatters = get('http://tmi.twitch.tv/group/user/{0}/chatters'.format(chan_name)).json()['chatters']
-        print(json.dumps(chatters, indent=4))
+        link = 'http://tmi.twitch.tv/group/user/{0}/chatters'
+        try:
+            chatters = get(link.format(chan_name), timeout=7).json()['chatters']
+        except Exception:
+            return False, False
+        #print(json.dumps(chatters, indent=4))
         all_mods = chatters['moderators'] + chatters['staff'] + chatters['admins'] + chatters['global_mods']
         is_mod = user in all_mods
         in_chat = True if is_mod else user in chatters['viewers']
@@ -50,9 +54,9 @@ def get_sec(s):
     return s
 
 
-def_ban_time = 30  # default ban time
-wait_time = 23.0  # time to wait before cancelling unaccepted duel
-max_d = 2  # maximum amount of simultaneous duels for each channel
+def_ban_time = 60  # default ban time
+wait_time = 33.0  # time to wait before cancelling unaccepted duel
+max_d = 3  # maximum amount of simultaneous duels for each channel
 turned_on = {x: True for x in cfg.config['channels']}
 duels = {x: [] for x in cfg.config['channels']}
 allowed_users = ('a_o_w', 'adrenaline_life', 'c_a_k_e', 'nastjanastja')
@@ -73,6 +77,7 @@ say_duel_result = "/me > {1} застрелил {0}!"
 say_you_coward = "/me > {1} струсил и не принял вызов {0}"
 say_now_restricted = "/me > {0} запретил дуэли законодательно!"
 say_now_allowed = "/me > {0} официально разрешил дуэли"
+say_suicide = "/me > {0} совершил самоубийство"
 
 
 def duel(args, chan, username):
@@ -91,6 +96,12 @@ def duel(args, chan, username):
 
     if args and turned_on[chan]:
         arg1, arg2 = args[0].lower().lstrip('@'), get_sec(args[1]) if len(args) == 2 else def_ban_time
+        if arg1 == username:
+            return [
+                '/timeout {0} {1}'.format(username, arg2),
+                say_suicide.format(username)
+            ]
+
         if arg1 == 'принять':
             d_list = [x for x in duels[chan] if x.sec_duelist == username]
             if d_list:
