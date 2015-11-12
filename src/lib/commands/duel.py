@@ -71,12 +71,15 @@ say_howto = "/w {1} {0} вызвал вас на дуэль. Напишите '!
             " или '!duel отклонить', чтобы слиться"
 say_duel_result = "/me > {1} застрелил {0}!"
 say_you_coward = "/me > {1} струсил и не принял вызов {0}"
+say_now_restricted = "/me > {0} запретил дуэли законодательно!"
+say_now_allowed = "/me > {0} официально разрешил дуэли"
 
 
 def duel(args, chan, username):
     if args and args[0] in ('on', 'off'):
         if username in allowed_users:
             turned_on[chan] = True if args[0] == 'on' else False
+            return say_now_allowed.format(username) if turned_on[chan] else say_now_restricted.format(username)
         return ''
 
     if args and args[0] == 'chk':
@@ -86,7 +89,7 @@ def duel(args, chan, username):
             duels[chan].remove(x)
         return resp
 
-    if args:
+    if args and turned_on[chan]:
         arg1, arg2 = args[0].lower().lstrip('@'), get_sec(args[1]) if len(args) == 2 else def_ban_time
         if arg1 == 'принять':
             d_list = [x for x in duels[chan] if x.sec_duelist == username]
