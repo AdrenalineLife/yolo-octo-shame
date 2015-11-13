@@ -94,64 +94,65 @@ def duel(args, chan, username):
             duels[chan].remove(x)
         return resp
 
-    if args and turned_on[chan]:
-        arg1, arg2 = args[0].lower().lstrip('@'), get_sec(args[1]) if len(args) == 2 else def_ban_time
-        if arg1 == username:
-            return [
-                '/timeout {0} {1}'.format(username, arg2),
-                say_suicide.format(username)
-            ]
-
-        if arg1 == 'принять':
-            d_list = [x for x in duels[chan] if x.sec_duelist == username]
-            if d_list:
-                d = d_list[0]
-                banned = d.make_duel()
-                not_banned = d.first_duelist if d.first_duelist != banned else d.sec_duelist
-                duels[chan].remove(d)
+    if turned_on[chan]:
+        if args:
+            arg1, arg2 = args[0].lower().lstrip('@'), get_sec(args[1]) if len(args) == 2 else def_ban_time
+            if arg1 == username:
                 return [
-                    '/timeout {0} {1}'.format(banned, d.ban_time),
-                    say_duel_result.format(banned, not_banned)
+                    '/timeout {0} {1}'.format(username, arg2),
+                    say_suicide.format(username)
                 ]
-            else:
-                return ''
 
-        if arg1 == 'отклонить':
-            d_list = [x for x in duels[chan] if x.sec_duelist == username]
-            if d_list:
-                d = d_list[0]
-                duels[chan].remove(d)
-                return say_you_coward.format(d.first_duelist, d.sec_duelist)
-            else:
-                return ''
-
-        if not Duel.max_reached(chan):
-            if not Duel.has_active_duel(username, chan):
-                if not Duel.has_active_duel(arg1, chan):
-                    in_chat, is_mod = Duel.user_status(arg1, chan[1:])
-                    if in_chat:
-                        if not is_mod:
-                            is_mod = Duel.user_status(username, chan[1:])[1]
-                            if not is_mod:
-                                duels[chan].append(Duel(username, arg1, arg2))
-                                return [
-                                    say_new_duel.format(username, arg1, arg2),
-                                    say_howto.format(username, arg1)
-                                ]
-                            else:
-                                return say_you_is_mod.format(username, arg1)
-                        else:
-                            return say_is_mod.format(username, arg1)
-                    else:
-                        return say_not_in_chat.format(arg1)
+            if arg1 == 'принять':
+                d_list = [x for x in duels[chan] if x.sec_duelist == username]
+                if d_list:
+                    d = d_list[0]
+                    banned = d.make_duel()
+                    not_banned = d.first_duelist if d.first_duelist != banned else d.sec_duelist
+                    duels[chan].remove(d)
+                    return [
+                        '/timeout {0} {1}'.format(banned, d.ban_time),
+                        say_duel_result.format(banned, not_banned)
+                    ]
                 else:
-                    return say_has_active
+                    return ''
+
+            if arg1 == 'отклонить':
+                d_list = [x for x in duels[chan] if x.sec_duelist == username]
+                if d_list:
+                    d = d_list[0]
+                    duels[chan].remove(d)
+                    return say_you_coward.format(d.first_duelist, d.sec_duelist)
+                else:
+                    return ''
+
+            if not Duel.max_reached(chan):
+                if not Duel.has_active_duel(username, chan):
+                    if not Duel.has_active_duel(arg1, chan):
+                        in_chat, is_mod = Duel.user_status(arg1, chan[1:])
+                        if in_chat:
+                            if not is_mod:
+                                is_mod = Duel.user_status(username, chan[1:])[1]
+                                if not is_mod:
+                                    duels[chan].append(Duel(username, arg1, arg2))
+                                    return [
+                                        say_new_duel.format(username, arg1, arg2),
+                                        say_howto.format(username, arg1)
+                                    ]
+                                else:
+                                    return say_you_is_mod.format(username, arg1)
+                            else:
+                                return say_is_mod.format(username, arg1)
+                        else:
+                            return say_not_in_chat.format(arg1)
+                    else:
+                        return say_has_active
+                else:
+                    return say_have_active
             else:
-                return say_have_active
+                return say_max_reached
         else:
-            return say_max_reached
-    else:
-        return say_usage
+            return say_usage
 
 
 if __name__ == '__main__':
