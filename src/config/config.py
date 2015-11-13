@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-#global config
 
 config = {
 
@@ -9,14 +8,16 @@ config = {
     'username': '',
     'oauth_password': '',  # get this from http://twitchapps.com/tmi/
 
-    # channel to join, starts with '#'
-    'channels': ['', ''],
+    'server_w': '199.9.253.119',
+
+    # channel to join
+    'channels': ['', ''], # chan name starts with '#'
 
     # if set to true will display any data received
     'debug': False,
 
     'cron': {
-        '#channel_one': {
+        '#adrenaline_life': {
             'run_cron': False,
         # set this to false if you want don't want to run the cronjob but you want to preserve the messages etc
             'run_time': 100,  # time in seconds
