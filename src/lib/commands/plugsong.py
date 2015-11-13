@@ -1,12 +1,20 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Life'
 
-from src.lib.functions_general import pp
+'''
+PLEASE NOTE:
+http://plug.dj has been shut down
+due to inability to pay for hosting
+'''
+
+
+import json
 from urllib.parse import urljoin
 from requests import Session
 from re import search
+
+from src.lib.functions_general import pp
 from src.res.authorization import *
-import json
 
 class LoginError(Exception): pass
 

@@ -1,5 +1,8 @@
-from src.config.config import *
+# -*- coding: utf-8 -*-
+
 import importlib
+from src.config.config import *
+from src.lib.functions_general import pp
 
 commands = {
     '!test': {
@@ -14,13 +17,6 @@ commands = {
         'return': 'command'
     },
 
-    '!wow': {
-        'limit': 30,
-        'argc_min': 3,
-        'argc_max': 3,
-        'return': 'command'
-    },
-
     '!vksong': {
         'limit': 0,
         'argc_min': 0,
@@ -28,10 +24,10 @@ commands = {
         'return': 'command'
     },
 
-    '!plugsong': {
+    '!prime': {
         'limit': 0,
-        'argc_min': 0,
-        'argc_max': 0,
+        'argc_min': 1,
+        'argc_max': 1,
         'return': 'command'
     },
 
@@ -40,20 +36,72 @@ commands = {
         'argc_min': 1,
         'argc_max': 10,
         'return': 'command'
+    },
+
+    '!pyramid': {
+        'limit': 0,
+        'argc_min': 1,
+        'argc_max': 2,
+        'return': 'command'
+    },
+
+    '!duel': {
+        'limit': 0,
+        'argc_min': 0,
+        'argc_max': 2,
+        'return': 'command',
+    },
+
+    '!history': {
+        'limit': 0,
+        'argc_min': 0,
+        'argc_max': 1,
+        'return': 'command'
+    },
+
+    '!dubsong': {
+        'limit': 0,
+        'argc_min': 0,
+        'argc_max': 0,
+        'return': 'command'
+    },
+
+    '!m8': {
+        'limit': 0,
+        'argc_min': 0,
+        'argc_max': 0,
+        'return': 'command'
+    },
+
+    '!ragnaros': {
+        'limit': 0,
+        'argc_min': 0,
+        'argc_max': 1,
+        'return': 'command',
+        'ch_time': 4,
     }
 }
 
 for channel in config['channels']:
     for command in commands:
+        commands[command]['time'] = 0
         commands[command][channel] = {}
         commands[command][channel]['last_used'] = 0
-        commands[command][channel]['my_last_used'] = 0
+
+missing_func = []
 
 for command in commands:
     if commands[command]['return'] == 'command':
-        module = importlib.import_module('src.lib.commands.%s' % command[1:])
-        commands[command]['function'] = getattr(module, command[1:])
+        try:
+            module = importlib.import_module('src.lib.commands.%s' % command[1:])
+            commands[command]['function'] = getattr(module, command[1:])
+        except ImportError:
+            missing_func.append(command)
+            pp('No module found: %s' % command, 'error')
+        except AttributeError:
+            missing_func.append(command)
+            pp('No function found: %s' % command, 'error')
 
-
-#module = importlib.import_module('src.lib.commands.%s' % command)
-#function = getattr(module, command)
+# deleting commands from dict which we did not find
+for f in missing_func:
+    commands.pop(f, None)

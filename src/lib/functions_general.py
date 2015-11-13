@@ -6,7 +6,8 @@ grn = "\033[01;36m{0}\033[00m"
 blu = "\033[01;34m{0}\033[00m"
 cya = "\033[01;36m{0}\033[00m"
 
-clr = False # Use colouring or not
+clr = False  # Use colouring or not
+
 
 def pp(message, mtype='INFO'):
     mtype = mtype.upper()

@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
-import socket, re, time, sys
-from src.lib.functions_general import *
-import src.lib.cron
+import socket
+import re
+import time
+import sys
 import threading
+
+import src.lib.cron
+from src.lib.functions_general import *
+
+
 
 
 class irc:
@@ -59,7 +65,7 @@ class irc:
         try:
             sock.connect((serv, self.config['port']))
         except:
-            pp('Cannot connect to server (%s:%s).' % (serv, self.config['port']), 'error')
+            pp('Cannot connect to server ({0}:{1}).'.format(serv, self.config['port']), 'error')
             if not self.whisper:
                 sys.exit()
 
@@ -69,10 +75,12 @@ class irc:
         sock.send('PASS {0}\r\n'.format(self.config['oauth_password']).encode())
         sock.send('NICK {0}\r\n'.format(self.config['username']).encode())
 
+        whisper_msg = 'to whisper server ' if self.whisper else ''
         if self.check_login_status(sock.recv(1024).decode()):
-            pp('Login successful.')
+            pp('Login {0}successful.'.format(whisper_msg))
         else:
-            pp('Login unsuccessful. (hint: make sure your oauth token is set in self.config/self.config.py).', 'error')
+            login_fail_msg = 'Login {0}unsuccessful. (hint: make sure your oauth token is set in self.config/self.config.py).'
+            pp(login_fail_msg.format(whisper_msg), 'error')
             if not self.whisper:
                 sys.exit()
 

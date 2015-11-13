@@ -8,14 +8,14 @@ err = 'Ошибочка...' #'¯\(ツ)/¯'
 
 
 def dubsong(args, chan, username):
-    if chan in ('#nastjanastja', '#a_o_w'):
+    if chan in ('#nastjanastja', '#a_o_w', '#adrenaline_life'):
         req = 'https://api.dubtrack.fm/room/nastjadds-party'
         try:
             resp = requests.get(req).json()
         except Exception:
             return err
 
-        print(json.dumps(resp, indent=4))
+        #print(json.dumps(resp, indent=4))
 
         if resp['message'] != 'OK':
             return err
