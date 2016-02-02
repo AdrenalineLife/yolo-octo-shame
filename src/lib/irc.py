@@ -9,8 +9,6 @@ import src.lib.cron
 from src.lib.functions_general import *
 
 
-
-
 class irc:
     def __init__(self, config, w=False):
         self.config = config
@@ -53,7 +51,7 @@ class irc:
         self.sock.send('PRIVMSG {0} :{1}\n'.format(channel, message).encode())
 
     def send_whisper(self, message):
-        self.sock.send('PRIVMSG #jtv :/w {0}\n'.format(message).encode())
+        self.sock.send('PRIVMSG #jtv :{0}\n'.format(message).encode())
 
     def get_irc_socket_object(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,21 +63,21 @@ class irc:
         try:
             sock.connect((serv, self.config['port']))
         except:
-            pp('Cannot connect to server ({0}:{1}).'.format(serv, self.config['port']), 'error')
+            pp('Cannot connect to server ({}:{}).'.format(serv, self.config['port']), 'error')
             if not self.whisper:
                 sys.exit()
 
         sock.settimeout(None)
 
-        sock.send('USER {0}\r\n'.format(self.config['username']).encode())
-        sock.send('PASS {0}\r\n'.format(self.config['oauth_password']).encode())
-        sock.send('NICK {0}\r\n'.format(self.config['username']).encode())
+        sock.send('USER {}\r\n'.format(self.config['username']).encode())
+        sock.send('PASS {}\r\n'.format(self.config['oauth_password']).encode())
+        sock.send('NICK {}\r\n'.format(self.config['username']).encode())
 
         whisper_msg = 'to whisper server ' if self.whisper else ''
         if self.check_login_status(sock.recv(1024).decode()):
-            pp('Login {0}successful.'.format(whisper_msg))
+            pp('Login {}successful.'.format(whisper_msg))
         else:
-            login_fail_msg = 'Login {0}unsuccessful. (hint: make sure your oauth token is set in self.config/self.config.py).'
+            login_fail_msg = 'Login {}unsuccessful. (hint: make sure your oauth token is set in self.config/self.config.py).'
             pp(login_fail_msg.format(whisper_msg), 'error')
             if not self.whisper:
                 sys.exit()

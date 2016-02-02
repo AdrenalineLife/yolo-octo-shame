@@ -20,18 +20,21 @@ class Roboraj:
         self.irc_w = irc_.irc(config, True)
         self.socket_w = self.irc_w.get_irc_socket_object()
 
-    def check_for_whisper(self, msg):
-        is_whisper = False
-        if msg.startswith('/w'):
-            msg = msg[2:].strip(' ')
-            is_whisper = True
-        return is_whisper, msg
+    @staticmethod
+    def is_whisper(msg):
+        return msg.startswith('/w')
+
+    def send_to_chat(self, result, username, channel):
+        resp = result.replace('(sender)', username)
+        pbot(resp, channel)
+        if self.is_whisper(resp):
+            self.irc_w.send_whisper(resp)
+        else:
+            self.irc.send_message(channel, resp)
 
     def run(self):
-        irc = self.irc
         sock = self.socket
 
-        irc_w = self.irc_w
         sock_w = self.socket_w
         config = self.config
 
@@ -48,20 +51,20 @@ class Roboraj:
             except Exception:
                 data_w = 'empty'
 
-            irc_w.check_for_ping(data_w)
+            self.irc_w.check_for_ping(data_w)
 
             if time.time() - f_commands.commands['!ragnaros']['time'] >= f_commands.commands['!ragnaros']['ch_time']:
                 ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], '#c_a_k_e', '')
                 f_commands.commands['!ragnaros']['time'] = time.time()
                 if ragn_resp:
                     for r in ragn_resp:
-                        irc.send_message('#c_a_k_e', r)
+                        self.irc.send_message('#c_a_k_e', r)
                         pbot(r, '#c_a_k_e')
 
             if time.time() - f_commands.commands['!duel']['time'] >= 5:
                 for ch in config['channels']:
                     for duel_resp in f_commands.commands['!duel']['function'](['chk'], ch, ''):
-                        irc.send_message(ch, duel_resp)
+                        self.irc.send_message(ch, duel_resp)
                 f_commands.commands['!duel']['time'] = time.time()
 
             data_list = data.split('\r\n')
@@ -75,11 +78,11 @@ class Roboraj:
                     print(data_line)
 
                 # check for ping, reply with pong
-                irc.check_for_ping(data_line)
+                self.irc.check_for_ping(data_line)
 
-                if irc.check_for_message(data_line):
+                if self.irc.check_for_message(data_line):
                     try:
-                        message_dict = irc.get_message(data_line)
+                        message_dict = self.irc.get_message(data_line)
                     except UnicodeEncodeError as detail:
                         pp('UnicodeEncodeError: %s' % detail, 'error')
                     except UnicodeDecodeError as detail:
@@ -107,7 +110,7 @@ class Roboraj:
 
                                 if f_commands.is_on_cooldown(command_name, channel):
                                     sec_remaining = f_commands.get_cooldown_remaining(command_name, channel)
-                                    irc_w.send_whisper(say_cd.format(username, sec_remaining))
+                                    self.irc_w.send_whisper(say_cd.format(username, sec_remaining))
                                     pbot('Command is on cooldown. (%s) (%s) (%ss remaining)' % (
                                         command_name, username, sec_remaining),
                                         channel
@@ -124,26 +127,14 @@ class Roboraj:
                                     if result:
                                         if type(result) == list:
                                             for r in result:
-                                                resp = r.replace('(sender)', username)
-                                                pbot(resp, channel)
-                                                is_whisp, resp = self.check_for_whisper(resp)
-                                                if is_whisp:
-                                                    irc_w.send_whisper(resp)
-                                                else:
-                                                    irc.send_message(channel, resp)
+                                                self.send_to_chat(r, username, channel)
                                         else:
-                                            resp = result.replace('(sender)', username)
-                                            pbot(resp, channel)
-                                            is_whisp, resp = self.check_for_whisper(resp)
-                                            if is_whisp:
-                                                irc_w.send_whisper(resp)
-                                            else:
-                                                irc.send_message(channel, resp)
+                                            self.send_to_chat(result, username, channel)
 
                         else:
                             if f_commands.is_on_cooldown(command_name, channel):
                                 sec_remaining = f_commands.get_cooldown_remaining(command_name, channel)
-                                irc_w.send_whisper(say_cd.format(username, sec_remaining))
+                                self.irc_w.send_whisper(say_cd.format(username, sec_remaining))
                                 pbot('Command is on cooldown. (%s) (%s) (%ss remaining)' % (
                                     command_name, username, sec_remaining),
                                     channel
@@ -159,4 +150,4 @@ class Roboraj:
                                 f_commands.update_last_used(command_name, channel)
 
                                 pbot(resp, channel)
-                                irc.send_message(channel, resp)
+                                self.irc.send_message(channel, resp)
