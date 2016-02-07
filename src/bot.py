@@ -53,13 +53,14 @@ class Roboraj:
 
             self.irc_w.check_for_ping(data_w)
 
-            if time.time() - f_commands.commands['!ragnaros']['time'] >= f_commands.commands['!ragnaros']['ch_time']:
-                ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], '#c_a_k_e', '')
+            if time.time() - f_commands.commands['!ragnaros']['time'] >= 7:
                 f_commands.commands['!ragnaros']['time'] = time.time()
-                if ragn_resp:
-                    for r in ragn_resp:
-                        self.irc.send_message('#c_a_k_e', r)
-                        pbot(r, '#c_a_k_e')
+                for ch in config['channels']:
+                    ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], ch, '')
+                    if ragn_resp:
+                        for r in ragn_resp:
+                            self.irc.send_message('#c_a_k_e', r)
+                            pbot(r, '#c_a_k_e')
 
             if time.time() - f_commands.commands['!duel']['time'] >= 5:
                 for ch in config['channels']:
