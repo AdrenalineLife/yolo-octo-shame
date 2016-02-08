@@ -11,10 +11,10 @@ class Ragnaros(object):
         self.name = name.lower()
         self.color = color  # color for using /me
         self.hit_freq = hit_freq  # ban every hit_freq seconds
-        self.last_time_hit = 0
         self.get_in_trap_time = get_in_trap_time
         self.ban_time = ban_time
         self.turned_on = False
+        self.last_time_hit = 0
         self.victims = dict()
 
     def make_hit(self, t=None):
@@ -35,18 +35,22 @@ class Ragnaros(object):
         for x in remove:
             self.victims.pop(x, None)
 
+    def turn_on_off(self, s):
+        self.turned_on = True if s == 'on' else False
 
-allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja')
+    def __str__(self):
+        return '{} {}'.format(self.name, self.turned_on)
+
+
+allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'adrenaline_life')
 protected = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'seeskixbocta', 'moobot', 'mirrobot', 'etozhemad')
 
 say = ('/me Рагнарос выходит на стол!', '/me Рагнарос покидает доску!')
 
-
-switch_state = lambda x: True if x == 'on' else False
-
 ragn_list = [
     Ragnaros('#c_a_k_e'),
-    Ragnaros('#meleeman777')
+    Ragnaros('#a_o_w'),
+    Ragnaros('#adrenaline_life'),
 ]
 
 
@@ -56,6 +60,7 @@ def ragnaros(args, chan, username):
         return ''
     else:
         ragn = ragn[0]
+    print(ragn)
     if args:
         if args[0] == 'check':
             ragn.remove_users()
@@ -72,7 +77,7 @@ def ragnaros(args, chan, username):
             return ''
 
         if args[0] in ('on', 'off') and username in allowed:
-            ragn.turned_on = switch_state(args[0])
+            ragn.turn_on_off(args[0])
             ragn.last_time_hit = time.time()
             return [
                 '/color {0}'.format(ragn.color),

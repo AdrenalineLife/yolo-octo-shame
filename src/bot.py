@@ -59,8 +59,8 @@ class Roboraj:
                     ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], ch, '')
                     if ragn_resp:
                         for r in ragn_resp:
-                            self.irc.send_message('#c_a_k_e', r)
-                            pbot(r, '#c_a_k_e')
+                            self.irc.send_message(ch, r)
+                            pbot(r, ch)
 
             if time.time() - f_commands.commands['!duel']['time'] >= 5:
                 for ch in config['channels']:
