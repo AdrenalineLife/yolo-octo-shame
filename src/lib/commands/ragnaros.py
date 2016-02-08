@@ -7,7 +7,7 @@ import json
 
 
 class Ragnaros(object):
-    def __init__(self, name, color='Red', hit_freq=90.0, get_in_trap_time=30.0, ban_time=40.0):
+    def __init__(self, name, color='Red', hit_freq=90.0, get_in_trap_time=30.0, ban_time=40):
         self.name = name.lower()
         self.color = color  # color for using /me
         self.hit_freq = hit_freq  # ban every hit_freq seconds
@@ -22,7 +22,6 @@ class Ragnaros(object):
             t = self.ban_time
         if self.victims:
             vic = random.choice(list(self.victims.keys()))
-            #print('>>> ' + vic + ' ' + str(t))
             return [
                 '/timeout {0} {1}'.format(vic, t),
                 'Рагнарос попал в тебя, {0}!'.format(vic)
@@ -38,7 +37,7 @@ class Ragnaros(object):
     def turn_on_off(self, s):
         self.turned_on = True if s == 'on' else False
 
-    def __str__(self):
+    def __repr__(self):
         return '{} {}'.format(self.name, self.turned_on)
 
 
@@ -48,7 +47,6 @@ protected = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'seeskixbocta', 'moobot', 'mirr
 say = ('/me Рагнарос выходит на стол!', '/me Рагнарос покидает доску!')
 
 ragn_list = [
-    Ragnaros('#c_a_k_e'),
     Ragnaros('#a_o_w'),
     Ragnaros('#adrenaline_life'),
 ]
@@ -60,7 +58,7 @@ def ragnaros(args, chan, username):
         return ''
     else:
         ragn = ragn[0]
-    print(ragn)
+    #print(ragn)
     if args:
         if args[0] == 'check':
             ragn.remove_users()
