@@ -31,4 +31,4 @@ def m8(args, msg):
             if lower_st.startswith(st):
                 check_string = check_string[len(st):]
 
-        return '/w (sender) вероятность, что {0} = {1}%'.format(check_string, randint(0, 101))
+        return msg.disp_name + ', вероятность, что {0} = {1}%'.format(check_string, randint(0, 101))
