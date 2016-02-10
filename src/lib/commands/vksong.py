@@ -12,8 +12,11 @@ groups = {
 }
 
 
-def vksong(args, chan, username):
-    vk_id = groups[chan]
+def vksong(args, msg):
+    try:
+        vk_id = groups[msg.chan]
+    except KeyError:
+        return 'Неизвестна группа vk для этого канала'
     vk_token = auth_vk_token
     vk_request = 'https://api.vk.com/method/status.get?group_id=%s&access_token=%s' % (vk_id, vk_token)
     try:

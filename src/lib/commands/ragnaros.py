@@ -14,7 +14,7 @@ class Ragnaros(object):
         self.get_in_trap_time = get_in_trap_time
         self.ban_time = ban_time
         self.turned_on = False
-        self.last_time_hit = 0
+        self.last_time_hit = 0.0
         self.victims = dict()
 
     def make_hit(self, t=None):
@@ -42,9 +42,8 @@ class Ragnaros(object):
 
 
 allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'adrenaline_life')
-protected = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'seeskixbocta', 'moobot', 'mirrobot', 'etozhemad')
 
-say = ('/me Рагнарос выходит на стол!', '/me Рагнарос покидает доску!')
+say = ('/me > Рагнарос выходит на стол!', '/me > Рагнарос покидает доску!')
 
 ragn_list = [
     Ragnaros('#a_o_w'),
@@ -52,8 +51,8 @@ ragn_list = [
 ]
 
 
-def ragnaros(args, chan, username):
-    ragn = [x for x in ragn_list if x.name == chan]
+def ragnaros(args, msg):
+    ragn = [x for x in ragn_list if x.name == msg.chan]
     if not ragn:
         return ''
     else:
@@ -70,11 +69,11 @@ def ragnaros(args, chan, username):
             return ''
 
         if args[0] == 'add':
-            if args[1] not in protected:
-                ragn.victims[args[1]] = time.time()
+            if not msg.is_mod and msg.chan[1:] != msg.name:
+                ragn.victims[msg.name] = time.time()
             return ''
 
-        if args[0] in ('on', 'off') and username in allowed:
+        if args[0] in ('on', 'off') and msg.name in allowed:
             ragn.turn_on_off(args[0])
             ragn.last_time_hit = time.time()
             return [
@@ -83,29 +82,29 @@ def ragnaros(args, chan, username):
                 '/color Blue'
             ]
 
+        if len(args) == 2 and msg.name in allowed:
+            if args[0] in ('cd', 'bantime'):
+                try:
+                    sec = int(args[1])
+                except ValueError:
+                    return ''
+                sec = 4 if sec < 4 else sec
+                if args[0] == 'cd':
+                    ragn.hit_freq = float(sec)
+                else:
+                    ragn.ban_time = sec
+            return ''
+
         try:
             sec = int(args[0])
         except ValueError:
             return ''
         if sec < 5:
             sec = 5
-        if username in allowed:
-            ragn.make_hit(sec)
+        if msg.name in allowed:
+            return ragn.make_hit(sec)
 
-        if len(args) == 2 and username in allowed:
-            if args[0] in ('cd', 'bantime'):
-                try:
-                    sec = int(args[1])
-                except ValueError:
-                    return ''
-                if sec > 4:
-                    if args[0] == 'cd':
-                        ragn.hit_freq = float(sec)
-                    else:
-                        ragn.ban_time = sec
-            return ''
-
-    if username in allowed:
+    if msg.name in allowed:
         return ragn.make_hit()
     else:
         return ''

@@ -12,14 +12,15 @@ clr = False  # Use colouring or not
 def pp(message, mtype='INFO'):
     mtype = mtype.upper()
 
-    if mtype == "ERROR" and clr:
+    if clr and mtype == "ERROR":
         mtype = red.format(mtype)
 
     print('[%s] [%s] %s' % (time.strftime('%H:%M:%S', time.localtime()), mtype, message))
 
 
 def ppi(channel, message, username):
-    msg = '[%s %s] <%s> %s' % (time.strftime('%H:%M:%S', time.localtime()), channel, grn.format(username) if clr else username, message)  # grn
+    username = grn.format(username) if clr else username
+    msg = '[%s %s] <%s> %s' % (time.strftime('%H:%M:%S', time.localtime()), channel, username, message)  # grn
     try:
         print(msg)
     except UnicodeEncodeError as detail:

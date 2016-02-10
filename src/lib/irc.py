@@ -16,7 +16,8 @@ class irc:
 
     def check_for_message(self, data):
         if re.match(
-                r'^:[a-zA-Z0-9_]+\![a-zA-Z0-9_]+@[a-zA-Z0-9_]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$',
+                r'.*;user-type=.* :[a-zA-Z0-9_]+![a-zA-Z0-9_]+@[a-zA-Z0-9_]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$',
+                #r'^:[a-zA-Z0-9_]+\![a-zA-Z0-9_]+@[a-zA-Z0-9_]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$',
                 data):
             return True
 
@@ -84,6 +85,8 @@ class irc:
 
         if self.whisper:
             sock.send('CAP REQ :twitch.tv/commands\r\n'.encode())
+        else:
+            sock.send('CAP REQ :twitch.tv/tags\r\n'.encode())
 
         # start threads for channels that have cron messages to run
         """for channel in self.config['channels']:

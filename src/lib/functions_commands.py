@@ -51,8 +51,8 @@ def check_returns_function(command):
         return True
 
 
-def pass_to_function(command, args, chan_name, username):
-    return commands[command]['function'](args, chan_name, username)
+def pass_to_function(command, args, msg):
+    return commands[command]['function'](args, msg)
 
 '''
 def has_access(command, username, channel):

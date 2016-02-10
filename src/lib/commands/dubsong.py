@@ -4,24 +4,29 @@ __author__ = 'Life'
 import requests
 import json
 
-err = 'Ошибочка...' #'¯\(ツ)/¯'
+dub_rooms = {
+    '#nastjanastja': 'nastjadds-party',
+    '#meleeman777': 'meleeman'
+}
 
 
-def dubsong(args, chan, username):
-    if chan in ('#nastjanastja', '#a_o_w', '#adrenaline_life'):
-        req = 'https://api.dubtrack.fm/room/nastjadds-party'
-        try:
-            resp = requests.get(req).json()
-        except Exception:
-            return err
+def dubsong(args, msg):
+    try:
+        req = 'https://api.dubtrack.fm/room/{}'.format(dub_rooms[msg.chan])
+    except KeyError:
+        return 'Неизвестна комната для этого канала'
 
-        #print(json.dumps(resp, indent=4))
+    try:
+        resp = requests.get(req, timeout=6).json()
+    except Exception:
+        return 'Ошибочка...'
 
-        if resp['message'] != 'OK':
-            return err
-        song = resp['data']['currentSong']
-        return 'Сейчас играет на dubtrack: %s' % song['name'] if song is not None else 'Ничего не играет'
-    else:
-        return ''
+    #print(json.dumps(resp, indent=4))
+
+    if resp['message'] != 'OK':
+        return 'Ошибочка...'
+    song = resp['data']['currentSong']
+    return 'Сейчас играет на dubtrack: {}'.format(song['name']) if song is not None else 'Ничего не играет'
+
 
 #print(dubsong(1, '#nastjanastja', 1))
