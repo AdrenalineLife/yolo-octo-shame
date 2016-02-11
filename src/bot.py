@@ -77,7 +77,6 @@ class Roboraj:
                 if config['debug'] and data_line != 'empty':
                     print(data_line)
 
-
                 # check for ping, reply with pong
                 self.irc.check_for_ping(data_line)
 
@@ -87,9 +86,7 @@ class Roboraj:
 
                     ppi(msg.chan, msg.message, msg.disp_name)
 
-                    #a = time.time()
                     f_commands.commands['!ragnaros']['function'](['add'], msg)
-                    #print(time.time() - a)
 
                     # check if message is a command with no arguments.
                     if f_commands.is_valid_command(msg.message) or f_commands.is_valid_command(msg.message.split(' ')[0]):

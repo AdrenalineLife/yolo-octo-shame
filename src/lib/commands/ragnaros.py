@@ -57,7 +57,6 @@ def ragnaros(args, msg):
         return ''
     else:
         ragn = ragn[0]
-    #print(ragn)
     if args:
         if args[0] == 'check':
             ragn.remove_users()
@@ -69,7 +68,7 @@ def ragnaros(args, msg):
             return ''
 
         if args[0] == 'add':
-            if not msg.is_mod and msg.chan[1:] != msg.name:
+            if not msg.is_mod:
                 ragn.victims[msg.name] = time.time()
             return ''
 
