@@ -3,7 +3,7 @@ __author__ = 'Life'
 
 import re
 import traceback
-
+from src.lib.functions_general import *
 
 class Message(object):
     def __init__(self, data, expl=False, name=None, mes=None, chan_=None):
@@ -21,7 +21,10 @@ class Message(object):
                 self.is_turbo = re.findall(r';turbo=([01]);', data)[0] == '1'
             except Exception as ee:
                 err_msg = data + '\n' + traceback.format_exc()
-                print('>>>>>>>>>>>>>\n', err_msg)
+                pp('PARSING ERROR, look at error_traceback.txt', 'ERROR')
+                f_ = open('error_traceback.txt', 'at')
+                f_.write(err_msg + '______________________\n')
+                f_.close()
                 self.name, self.disp_name, self.chan, self.message = '', '', '#', ''
         else:
             self.disp_name = name
