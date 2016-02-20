@@ -13,11 +13,8 @@ from src.res.Message_class import Message
 class Roboraj:
     def __init__(self, config):
         self.config = config
-        self.irc = irc_.irc(config)
-        self.socket = self.irc.get_irc_socket_object()
-
-        self.irc_w = irc_.irc(config, True)
-        self.socket_w = self.irc_w.get_irc_socket_object()
+        self.irc = irc_.Irc(config)
+        self.irc_w = irc_.Irc(config, True)
 
     @staticmethod
     def is_whisper(msg):
@@ -32,21 +29,20 @@ class Roboraj:
             self.irc.send_message(channel, resp)
 
     def run(self):
-        sock = self.socket
-
-        sock_w = self.socket_w
         config = self.config
+        self.irc.get_irc_socket_object()
+        self.irc_w.get_irc_socket_object()
 
         say_cd = '{0} Команда будет доступна через {1} сек'
 
         while True:
             try:
-                data = sock.recv(config['socket_buffer_size']).decode().rstrip()
+                data = self.irc.recv(config['socket_buffer_size']).decode().rstrip()
             except Exception:
                 data = 'empty'
 
             try:
-                data_w = sock_w.recv(config['socket_buffer_size']).decode().rstrip()
+                data_w = self.irc_w.recv(config['socket_buffer_size']).decode().rstrip()
             except Exception:
                 data_w = 'empty'
 
@@ -117,7 +113,7 @@ class Roboraj:
                                     if result:
                                         if type(result) == list:
                                             for r in result:
-                                                self.send_to_chat(r, msg.name, msg.chan)
+                                                self.send_to_chat(r, msg.disp_name, msg.chan)
                                         else:
                                             self.send_to_chat(result, msg.name, msg.chan)
 
@@ -136,7 +132,7 @@ class Roboraj:
                                     )
                                 f_commands.update_last_used(command_name, msg.chan)
 
-                                resp = f_commands.get_return(command_name).replace('(sender)', msg.name)
+                                resp = f_commands.get_return(command_name).replace('(sender)', msg.disp_name)
                                 f_commands.update_last_used(command_name, msg.chan)
 
                                 pbot(resp, msg.chan)
