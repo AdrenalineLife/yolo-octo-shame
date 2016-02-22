@@ -10,7 +10,7 @@ import src.lib.functions_commands as f_commands
 from src.res.Message_class import Message
 
 
-class Roboraj:
+class Roboraj(object):
     def __init__(self, config):
         self.config = config
         self.irc = irc_.Irc(config)
