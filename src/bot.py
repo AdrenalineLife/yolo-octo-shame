@@ -102,7 +102,7 @@ class Roboraj(object):
                                         msg.chan
                                         )
                                 else:
-                                    pbot('Command is valid an not on cooldown. (%s) (%s)' % (
+                                    pbot('Command is valid and not on cooldown. (%s) (%s)' % (
                                         command_name, msg.name),
                                         msg.chan
                                         )
