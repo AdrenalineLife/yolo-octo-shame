@@ -3,3 +3,15 @@
 *.[oa]
 .idea/
 *~
+serve.py
+src/config/*
+command_headers.py
+history.py
+prime.py
+output.txt
+pyramid.py
+quiz.py
+__init__.py
+authorization.py
+questions*.txt
+src/res/Channel_class.py
