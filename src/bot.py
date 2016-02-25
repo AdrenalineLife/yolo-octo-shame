@@ -33,7 +33,7 @@ class Roboraj(object):
         self.irc.get_irc_socket_object()
         self.irc_w.get_irc_socket_object()
 
-        say_cd = '{0} Команда будет доступна через {1} сек'
+        say_cd = '/w {0} Команда будет доступна через {1} сек'
 
         while True:
             try:
