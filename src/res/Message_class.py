@@ -11,7 +11,7 @@ class Message(object):
         if not expl:
             try:
                 self.name = re.findall(r'@([a-zA-Z0-9_]+)[.]tmi[.]twitch[.]tv PRIVMSG', data)[0]
-                self.disp_name = re.findall(r';display-name=([a-zA-Z0-9_\\]*);', data)[0].strip('\s')
+                self.disp_name = re.findall(r';display-name=([a-zA-Z0-9_\\]*);', data)[0].rstrip('\s')
                 if not self.disp_name:
                     self.disp_name = self.name
                 self.message = re.findall(r'@[a-zA-Z0-9_]+[.]tmi[.]twitch[.]tv PRIVMSG #[a-z0-9_]+ :(.*)', data)[0]

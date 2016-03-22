@@ -4,7 +4,7 @@
 .idea/
 *~
 serve.py
-src/config/*
+*config.py
 command_headers.py
 history.py
 prime.py

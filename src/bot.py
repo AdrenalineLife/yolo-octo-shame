@@ -116,6 +116,8 @@ class Roboraj(object):
                                                 self.send_to_chat(r, msg.disp_name, msg.chan)
                                         else:
                                             self.send_to_chat(result, msg.name, msg.chan)
+                            else:
+                                pp('Invalid number of arguments for {}'.format(command_name))
 
                         else:
                             if f_commands.is_on_cooldown(command_name, msg.chan):
