@@ -8,43 +8,41 @@ import random
 
 import src.config.config as cfg
 
-
+# TODO переписать
 class Duel(object):
-    def __init__(self, name, name_d, sec_name, sec_name_d, seconds):
-        self.first_duelist = name
-        self.f_d_disp = name_d
-        self.sec_duelist = sec_name
-        self.sec_d_disp = sec_name_d.lstrip('@')
+    def __init__(self, name, sec_name, seconds):
+        self.first_name_disp = name.lstrip('@')
+        self.first_name = self.first_name_disp.lower()
+        self.sec_name_disp = sec_name.lstrip('@')
+        self.sec_name = self.sec_name_disp.lower()
         self.ban_time = seconds
         self.time = time.time()
-
-    @staticmethod
-    def user_status(user, chan_name):
-        link = 'http://tmi.twitch.tv/group/user/{0}/chatters'
-        try:
-            chatters = get(link.format(chan_name), timeout=7).json()['chatters']
-        except Exception:
-            return False, False
-        #print(json.dumps(chatters, indent=4))
-        all_mods = chatters['moderators'] + chatters['staff'] + chatters['admins'] + chatters['global_mods']
-        is_mod = user in all_mods
-        in_chat = True if is_mod else user in chatters['viewers']
-        return in_chat, is_mod
 
     @staticmethod
     def max_reached(chan):
         return len(duels[chan]) >= max_d
 
     def make_duel(self):
-        return random.choice([self.f_d_disp, self.sec_d_disp])
+        return random.choice([self.first_name_disp, self.sec_name_disp])
 
     def expired(self):
         return time.time() - self.time >= wait_time
 
     @staticmethod
     def has_active_duel(name, chan):
-        z = [x for x in duels[chan] if name in (x.first_duelist, x.sec_duelist)]
-        return bool(z)
+        return bool([x for x in duels[chan] if name in (x.first_name, x.sec_name)])
+
+
+def user_status(user, chan_name):
+    link = 'http://tmi.twitch.tv/group/user/{0}/chatters'
+    try:
+        chatters = get(link.format(chan_name), timeout=6).json()['chatters']
+    except Exception:
+        return False, False
+    all_mods = chatters['moderators'] + chatters['staff'] + chatters['admins'] + chatters['global_mods']
+    is_mod = user in all_mods
+    in_chat = True if is_mod else user in chatters['viewers']
+    return in_chat, is_mod
 
 
 def get_sec(s):
@@ -104,15 +102,15 @@ def duel(args, msg):
             if arg1 == msg.name:
                 return [
                     '/timeout {0} {1}'.format(msg.name, arg2),
-                    say_suicide.format(msg.name)
+                    say_suicide.format(msg.disp_name)
                 ]
 
             if arg1 == 'принять':
-                d_list = [x for x in duels[msg.chan] if x.sec_duelist == msg.name]
+                d_list = [x for x in duels[msg.chan] if x.sec_name == msg.name]
                 if d_list:
                     d = d_list[0]
                     banned = d.make_duel()
-                    not_banned = d.f_d_disp if d.f_d_disp != banned else d.sec_d_disp
+                    not_banned = d.first_name_disp if d.first_name_disp != banned else d.sec_name_disp
                     duels[msg.chan].remove(d)
                     return [
                         '/timeout {0} {1}'.format(banned, d.ban_time),
@@ -122,45 +120,39 @@ def duel(args, msg):
                     return ''
 
             if arg1 == 'отклонить':
-                d_list = [x for x in duels[msg.chan] if x.sec_duelist == msg.name]
+                d_list = [x for x in duels[msg.chan] if x.sec_name == msg.name]
                 if d_list:
                     d = d_list[0]
                     duels[msg.chan].remove(d)
-                    return say_you_coward.format(d.f_d_disp, d.sec_d_disp)
+                    return say_you_coward.format(d.first_name_disp, d.sec_name_disp)
                 else:
                     return ''
 
-            if not Duel.max_reached(msg.chan):
-                if not Duel.has_active_duel(msg.name, msg.chan):
-                    if not Duel.has_active_duel(arg1, msg.chan):
-                        in_chat, is_mod = Duel.user_status(arg1, msg.chan[1:])
-                        if in_chat:
-                            if not is_mod:
-                                #is_mod = Duel.user_status(msg.name, msg.chan[1:])[1]
-                                if not msg.is_mod:
-                                    duels[msg.chan].append(Duel(msg.name, msg.disp_name, arg1, arg1_disp, arg2))
-                                    return [
-                                        say_new_duel.format(msg.disp_name, arg1_disp, arg2),
-                                        say_howto.format(msg.disp_name, arg1_disp)
-                                    ]
-                                else:
-                                    return say_you_is_mod.format(msg.disp_name, arg1_disp)
-                            else:
-                                return say_is_mod.format(msg.disp_name, arg1_disp)
-                        else:
-                            return say_not_in_chat.format(arg1_disp)
-                    else:
-                        return say_has_active
-                else:
-                    return say_have_active
-            else:
+            if Duel.max_reached(msg.chan):
                 return say_max_reached
+            if Duel.has_active_duel(msg.name, msg.chan):
+                return say_have_active
+            if Duel.has_active_duel(arg1, msg.chan):
+                return say_has_active
+            in_chat, is_mod = user_status(arg1, msg.chan[1:])
+            if not in_chat:
+                return say_not_in_chat.format(arg1_disp)
+            if is_mod:
+                return say_is_mod.format(msg.disp_name, arg1_disp)
+            #is_mod = user_status(msg.name, msg.chan[1:])[1]
+            if msg.is_mod:
+                return say_you_is_mod.format(msg.disp_name, arg1_disp)
+            duels[msg.chan].append(Duel(msg.disp_name, arg1_disp, arg2))
+            return [
+                say_new_duel.format(msg.disp_name, arg1_disp, arg2),
+                say_howto.format(msg.disp_name, arg1_disp)
+            ]
         else:
             return say_usage
 
 
 if __name__ == '__main__':
-    print(Duel.user_status('adrenaline_life', 'nastjanastja'))
-    print(Duel.user_status('a_o_w', 'nastjanastja'))
-    print(Duel.user_status('c_a_k_e', 'nastjanastja'))
+    print(user_status('adrenaline_life', 'nastjanastja'))
+    print(user_status('a_o_w', 'nastjanastja'))
+    print(user_status('c_a_k_e', 'nastjanastja'))
     print(Duel.max_reached('#a_o_w'))

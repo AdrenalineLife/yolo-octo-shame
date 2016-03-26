@@ -28,7 +28,6 @@ class Channel(object):
         resp = requests.get(req.format(self.name), timeout=3).json()
         self.is_online = resp['stream'] is not None
         self.curr_game = resp['stream']['channel']['game'] if self.is_online else ''
-        #print(self.curr_game)
 
     def shorten_game(self):
         short_names = {
@@ -63,7 +62,7 @@ class Channel(object):
         if self.games:
             self.games[-1]['ended'] = time.time()
             if not need_time:
-                return ' → '.join([x['games'] for x in self.games])
+                return ' → '.join([x['game'] for x in self.games])
             else:
                 return ' → '.join(self.to_str_w_time(x) for x in self.games) # доделать
         else:
