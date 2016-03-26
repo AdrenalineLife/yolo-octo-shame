@@ -43,11 +43,11 @@ class Channel(object):
     def add_game(self):
         game_name = self.shorten_game()
         if self.games:
-            if self.games[-1][0] != game_name:
-                self.games.append((game_name, time.time()))
+            if self.games[-1]['game'] != game_name:
+                self.games.append({'game': game_name, 'started': time.time()})
                 #print('Adding >> ' + game_name)
         else:
-            self.games.append((game_name, time.time()))
+            self.games.append({'game': game_name, 'started': time.time()})
             #print('Adding >> ' + game_name)
 
     def expired(self):
@@ -55,16 +55,17 @@ class Channel(object):
 
     @staticmethod
     def to_str_w_time(x):  # for games_to_str with time
-        m, s = divmod(time.time() - x[1], 60)
+        m, s = divmod(int(x['ended'] - x['started']), 60)
         h, m = divmod(m, 60)
-        return '{} [{} h {} m]'.format(x[0], h, m) if h else '{} [{} m]'.format(x[0], m)
+        return '{} [{} h {} m]'.format(x['game'], h, m) if h else '{} [{} m]'.format(x['game'], m)
 
     def games_to_str(self, need_time=False):
         if self.games:
+            self.games[-1]['ended'] = time.time()
             if not need_time:
-                return ' → '.join([x[0] for x in self.games])
+                return ' → '.join([x['games'] for x in self.games])
             else:
-                return ' → '.join(self.to_str_w_time(x) for x in self.games)
+                return ' → '.join(self.to_str_w_time(x) for x in self.games) # доделать
         else:
             return 'Игр не было'
 
@@ -89,6 +90,7 @@ def check_channel_state():
                 ch.started = True
             else:
                 if ch.started:
+                    ch.games[-1]['ended'] = time.time()
                     ch.time_ = time.time()
                     ch.started = False
                 if ch.expired():
