@@ -90,7 +90,7 @@ def duel(args, msg):
 
     if args and args[0] == 'chk':
         d_list = [x for x in duels[msg.chan] if x.expired()]
-        resp = [say_expired.format(x.f_d_disp, x.sec_d_disp) for x in d_list]
+        resp = [say_expired.format(x.first_name_disp, x.sec_name_disp) for x in d_list]
         for x in d_list:
             duels[msg.chan].remove(x)
         return resp

@@ -52,15 +52,15 @@ class Roboraj(object):
                 f_commands.commands['!ragnaros']['time'] = time.time()
                 for ch in config['channels']:
                     ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], Message(None, True, '', '', ch))
-                    if ragn_resp:
-                        for r in ragn_resp:
-                            self.irc.send_message(ch, r)
-                            pbot(r, ch)
+                    for r in ragn_resp:
+                        self.irc.send_message(ch, r)
+                        pbot(r, ch)
 
             if time.time() - f_commands.commands['!duel']['time'] >= 5:
                 for ch in config['channels']:
                     for duel_resp in f_commands.commands['!duel']['function'](['chk'], Message(None, True, '', '', ch)):
                         self.irc.send_message(ch, duel_resp)
+                        pbot(duel_resp, ch)
                 f_commands.commands['!duel']['time'] = time.time()
 
             data_list = data.split('\r\n')
