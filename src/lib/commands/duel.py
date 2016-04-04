@@ -41,7 +41,6 @@ def user_status(user, chan_name):
         try:
             chatters = get(link.format(chan_name), timeout=3).json()['chatters']
         except Exception:
-            print('>>>>> Exception')
             err_cnt += 1
             if err_cnt >= 3:
                 return False, False
