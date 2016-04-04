@@ -8,7 +8,7 @@ import random
 
 import src.config.config as cfg
 
-# TODO переписать
+
 class Duel(object):
     def __init__(self, name, sec_name, seconds):
         self.first_name_disp = name.lstrip('@')
@@ -35,10 +35,18 @@ class Duel(object):
 
 def user_status(user, chan_name):
     link = 'http://tmi.twitch.tv/group/user/{0}/chatters'
-    try:
-        chatters = get(link.format(chan_name), timeout=6).json()['chatters']
-    except Exception:
-        return False, False
+    err_cnt = 0
+    done = False
+    while not done:
+        try:
+            chatters = get(link.format(chan_name), timeout=3).json()['chatters']
+        except Exception:
+            print('>>>>> Exception')
+            err_cnt += 1
+            if err_cnt >= 3:
+                return False, False
+        else:
+            done = True
     all_mods = chatters['moderators'] + chatters['staff'] + chatters['admins'] + chatters['global_mods']
     is_mod = user in all_mods
     in_chat = True if is_mod else user in chatters['viewers']
