@@ -15,3 +15,4 @@ __init__.py
 authorization.py
 questions*.txt
 src/res/Channel_class.py
+input_output/*

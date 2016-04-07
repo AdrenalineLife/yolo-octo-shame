@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import pickle
 
 red = "\033[01;31m{0}\033[00m"
 grn = "\033[01;36m{0}\033[00m"
@@ -41,3 +42,16 @@ def pbot(message, channel=''):
         pp('UnicodeEncodeError: %s' % detail, 'error')
     except UnicodeDecodeError as detail:
         pp('UnicodeDecodeError: %s' % detail, 'error')
+
+
+def save_obj(obj, name):
+    file_ = open(r'input_output\{}'.format(name), mode='wb')
+    pickle.dump(obj, file_, 3)
+    file_.close()
+
+
+def load_obj(name):
+    file_ = open(r'input_output\{}'.format(name), mode='rb')
+    result = pickle.load(file_)
+    file_.close()
+    return result

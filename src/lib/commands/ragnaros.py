@@ -4,6 +4,7 @@ __author__ = 'Life'
 import time
 import random
 import json
+from src.lib.functions_general import save_obj, load_obj, pp
 
 
 class Ragnaros(object):
@@ -38,17 +39,33 @@ class Ragnaros(object):
         self.turned_on = True if s == 'on' else False
 
     def __repr__(self):
-        return '{} {}'.format(self.name, self.turned_on)
+        return json.dumps(self.__dict__, indent=0) #'{} {}'.format(self.name, self.turned_on)
 
 
 allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'adrenaline_life')
 
 say = ('/me > Рагнарос выходит на стол!', '/me > Рагнарос покидает доску!')
 
-ragn_list = [
-    Ragnaros('#a_o_w'),
-    Ragnaros('#adrenaline_life'),
-]
+required_ch = (
+    '#a_o_w',
+)
+
+try:
+    ragn_list = load_obj('ragnaros')
+except FileNotFoundError:
+    ragn_list = [Ragnaros(x) for x in required_ch]
+except Exception:
+    ragn_list = [Ragnaros(x) for x in required_ch]
+    pp("Could not load ragnaros file", 'error')
+else:
+    existing_ragn = [x.name for x in ragn_list]
+    for x in required_ch:
+        if x not in existing_ragn:
+            ragn_list.append(Ragnaros(x))
+    del existing_ragn
+    for x in ragn_list:
+        x.victims = dict()
+        x.last_time_hit = time.time()
 
 
 def ragnaros(args, msg):
@@ -60,8 +77,6 @@ def ragnaros(args, msg):
     if args:
         if args[0] == 'check':
             ragn.remove_users()
-            #print(json.dumps(victims, indent=4))
-
             if ragn.turned_on and time.time() - ragn.last_time_hit >= ragn.hit_freq:
                 ragn.last_time_hit = time.time()
                 return ragn.make_hit()
@@ -75,6 +90,7 @@ def ragnaros(args, msg):
         if args[0] in ('on', 'off') and msg.name in allowed:
             ragn.turn_on_off(args[0])
             ragn.last_time_hit = time.time()
+            save_obj(ragn_list, 'ragnaros')
             return [
                 '/color {0}'.format(ragn.color),
                 say[0] if ragn.turned_on else say[1],
@@ -90,8 +106,10 @@ def ragnaros(args, msg):
                 sec = 4 if sec < 4 else sec
                 if args[0] == 'cd':
                     ragn.hit_freq = float(sec)
+                    save_obj(ragn_list, 'ragnaros')
                 else:
                     ragn.ban_time = sec
+                    save_obj(ragn_list, 'ragnaros')
             return ''
 
         try:
