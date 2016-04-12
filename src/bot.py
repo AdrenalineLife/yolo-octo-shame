@@ -5,8 +5,8 @@ Developed by Aidan Thomson <aidraj0@gmail.com>
 """
 
 import src.lib.irc as irc_
-from src.lib.functions_general import *
 import src.lib.functions_commands as f_commands
+from src.lib.functions_general import *
 from src.res.Message_class import Message
 
 
@@ -14,26 +14,20 @@ class Roboraj(object):
     def __init__(self, config):
         self.config = config
         self.irc = irc_.Irc(config)
-        self.irc_w = irc_.Irc(config, True)
 
-    @staticmethod
-    def is_whisper(msg):
-        return msg.startswith('/w ')
-
-    def send_to_chat(self, result, username, channel):
+    def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
+        channel = '#jtv' if result.startswith('/w ') else channel
         pbot(resp, channel)
-        if self.is_whisper(resp):
-            self.irc_w.send_whisper(resp)
-        else:
-            self.irc.send_message(channel, resp)
+        self.irc.send_message(resp, channel)
 
     def run(self):
         config = self.config
         self.irc.get_irc_socket_object()
-        self.irc_w.get_irc_socket_object()
 
-        say_cd = '/w {0} Команда будет доступна через {1} сек'
+        say_cd = '/w (sender) Команда будет доступна через {} сек'
+        pbot_on_cd = 'Command is on cooldown. ({}) ({}) ({}s remaining)'
+        pbot_not_on_cd = 'Command is valid and not on cooldown. ({}) ({})'
 
         while True:
             try:
@@ -41,26 +35,17 @@ class Roboraj(object):
             except Exception:
                 data = 'empty'
 
-            try:
-                data_w = self.irc_w.recv(config['socket_buffer_size']).decode().rstrip()
-            except Exception:
-                data_w = 'empty'
-
-            self.irc_w.check_for_ping(data_w)
-
             if time.time() - f_commands.commands['!ragnaros']['time'] >= 7:
                 f_commands.commands['!ragnaros']['time'] = time.time()
                 for ch in config['channels']:
                     ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], Message(None, True, '', '', ch))
                     for r in ragn_resp:
-                        self.irc.send_message(ch, r)
-                        pbot(r, ch)
+                        self.send_to_chat(r, channel=ch)
 
             if time.time() - f_commands.commands['!duel']['time'] >= 5:
                 for ch in config['channels']:
                     for duel_resp in f_commands.commands['!duel']['function'](['chk'], Message(None, True, '', '', ch)):
-                        self.irc.send_message(ch, duel_resp)
-                        pbot(duel_resp, ch)
+                        self.send_to_chat(duel_resp, channel=ch)
                 f_commands.commands['!duel']['time'] = time.time()
 
             data_list = data.split('\r\n')
@@ -68,7 +53,7 @@ class Roboraj(object):
             for data_line in data_list:
                 if len(data_line) == 0:
                     pp('Connection was lost, reconnecting.')
-                    sock = self.irc.get_irc_socket_object()
+                    self.irc.get_irc_socket_object()
 
                 if config['debug'] and data_line != 'empty':
                     print(data_line)
@@ -96,16 +81,10 @@ class Roboraj(object):
 
                                 if f_commands.is_on_cooldown(command_name, msg.chan):
                                     sec_remaining = f_commands.get_cooldown_remaining(command_name, msg.chan)
-                                    self.irc_w.send_whisper(say_cd.format(msg.name, sec_remaining))
-                                    pbot('Command is on cooldown. (%s) (%s) (%ss remaining)' % (
-                                        command_name, msg.name, sec_remaining),
-                                        msg.chan
-                                        )
+                                    self.send_to_chat(say_cd.format(sec_remaining), msg.disp_name, msg.chan)
+                                    pbot(pbot_on_cd.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                                 else:
-                                    pbot('Command is valid and not on cooldown. (%s) (%s)' % (
-                                        command_name, msg.name),
-                                        msg.chan
-                                        )
+                                    pbot(pbot_not_on_cd.format(command_name, msg.disp_name), msg.chan)
 
                                     result = f_commands.pass_to_function(command_name, args, msg)
                                     f_commands.update_last_used(command_name, msg.chan)
@@ -115,27 +94,17 @@ class Roboraj(object):
                                             for r in result:
                                                 self.send_to_chat(r, msg.disp_name, msg.chan)
                                         else:
-                                            self.send_to_chat(result, msg.name, msg.chan)
+                                            self.send_to_chat(result, msg.disp_name, msg.chan)
                             else:
-                                pp('Invalid number of arguments for {}'.format(command_name))
+                                pp("Invalid number of arguments for '{}'".format(command_name))
 
                         else:
                             if f_commands.is_on_cooldown(command_name, msg.chan):
                                 sec_remaining = f_commands.get_cooldown_remaining(command_name, msg.chan)
-                                self.irc_w.send_whisper(say_cd.format(msg.name, sec_remaining))
-                                pbot('Command is on cooldown. (%s) (%s) (%ss remaining)' % (
-                                    command_name, msg.name, sec_remaining),
-                                    msg.chan
-                                    )
+                                self.send_to_chat(say_cd.format(sec_remaining), msg.disp_name, msg.chan)
+                                pbot(pbot_on_cd.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                             elif f_commands.check_has_return(command_name):
-                                pbot('Command is valid and not on cooldown. (%s) (%s)' % (
-                                    command_name, msg.name),
-                                    msg.chan
-                                    )
+                                pbot(pbot_not_on_cd.format(command_name, msg.disp_name), msg.chan)
+                                resp = f_commands.get_return(command_name)
                                 f_commands.update_last_used(command_name, msg.chan)
-
-                                resp = f_commands.get_return(command_name).replace('(sender)', msg.disp_name)
-                                f_commands.update_last_used(command_name, msg.chan)
-
-                                pbot(resp, msg.chan)
-                                self.irc.send_message(msg.chan, resp)
+                                self.send_to_chat(resp, msg.disp_name, msg.chan)
