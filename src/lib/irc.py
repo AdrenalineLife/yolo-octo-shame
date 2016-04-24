@@ -19,7 +19,7 @@ class Irc(socket.socket):
     def check_for_message(data):
         return bool(re.match(
             r'^@color=.*;user-type=.* :[a-zA-Z0-9_]+![a-zA-Z0-9_]+@[a-zA-Z0-9_]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$',
-            #r'^:[a-zA-Z0-9_]+\![a-zA-Z0-9_]+@[a-zA-Z0-9_]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$',
+            # r'^:[a-zA-Z0-9_]+\![a-zA-Z0-9_]+@[a-zA-Z0-9_]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$',
             data))
 
     @staticmethod
@@ -43,7 +43,7 @@ class Irc(socket.socket):
     def send_message(self, message, channel=None):
         super().send('PRIVMSG {} :{}\n'.format(channel, message).encode())
 
-    def get_irc_socket_object(self):
+    def get_irc_socket_object(self, recnct_cnt=5):
         super().settimeout(10)  # default 10
 
         serv = self.config['server']
@@ -51,8 +51,13 @@ class Irc(socket.socket):
         try:
             super().connect((serv, self.config['port']))
         except Exception:
-            pp('Cannot connect to server ({}:{}).'.format(serv, self.config['port']), 'error')
-            sys.exit()
+            if recnct_cnt > 0:
+                pp('Cannot connect to server ({}:{}), trying again.'.format(serv, self.config['port']), 'error')
+                time.sleep((5 - recnct_cnt)**2)
+                return self.get_irc_socket_object(recnct_cnt=recnct_cnt - 1)
+            else:
+                pp('Cannot connect to server, exiting', 'ERROR')
+                sys.exit()
 
         super().settimeout(None)
 
@@ -89,6 +94,6 @@ class Irc(socket.socket):
         pp('Joined channels.')
 
     def leave_channels(self, channels):
-        pp('Leaving chanels {0},'.format(channels))
+        pp('Leaving chanels {},'.format(channels))
         super().send('PART {}\r\n'.format(channels).encode())
         pp('Left channels.')
