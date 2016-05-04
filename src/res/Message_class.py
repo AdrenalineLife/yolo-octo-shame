@@ -11,12 +11,12 @@ class Message(object):
         if not expl:
             try:
                 self.name = re.findall(r'@([a-zA-Z0-9_]+)[.]tmi[.]twitch[.]tv PRIVMSG', data)[0]
-                self.disp_name = re.findall(r';display-name=([a-zA-Z0-9_]*)(\\s)*;', data)[0].rstrip('\s')
+                self.disp_name = re.findall(r';display-name=([a-zA-Z0-9_]*)(\\s)*;', data)[0][0]
                 if not self.disp_name:
                     self.disp_name = self.name
                 self.message = re.findall(r'@[a-zA-Z0-9_]+[.]tmi[.]twitch[.]tv PRIVMSG #[a-z0-9_]+ :(.*)', data)[0]
                 self.chan = re.findall(r'@[a-zA-Z0-9_]+[.]tmi[.]twitch[.]tv PRIVMSG (.*?) :', data)[0]
-                self.color = re.findall(r'^@color=([A-Z0-9#]*);', data)[0]
+                self.color = re.findall(r'.*;color=([A-Z0-9#]*);', data)[0]
                 self.is_mod = (re.findall(r';mod=([01]);', data)[0] == '1') or (self.chan[1:] == self.name)
                 self.is_sub = re.findall(r';subscriber=([01]);', data)[0] == '1'
                 self.is_turbo = re.findall(r';turbo=([01]);', data)[0] == '1'
