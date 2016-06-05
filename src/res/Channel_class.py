@@ -6,6 +6,8 @@ import json
 import time
 import threading
 
+from src.lib.functions_general import save_obj, load_obj, pp
+
 
 class Channel(object):
     def __init__(self, name, break_time=1200):
@@ -69,11 +71,24 @@ class Channel(object):
             return 'Игр не было'
 
 
-ch_list = [
-    Channel('c_a_k_e'),
-    Channel('nastjanastja'),
-    Channel('a_o_w', 4*60)
+req_list = [
+    'c_a_k_e',
+    'nastjanastja',
 ]
+
+try:
+    ch_list = load_obj('history')
+except FileNotFoundError:
+    ch_list = [Channel(x) for x in req_list]
+except Exception:
+    ch_list = [Channel(x) for x in req_list]
+    pp("Could not load channel file", 'error')
+else:
+    existing_ch = [x.name for x in ch_list]
+    for x in req_list:
+        if x not in existing_ch:
+            ch_list.append(Channel(x))
+    del existing_ch
 
 
 def check_channel_state():
@@ -81,7 +96,6 @@ def check_channel_state():
         for ch in ch_list:
             try:
                 ch.get_state()
-                #print('got state of ' + ch.name)
             except Exception:  # ConnectionError, ConnectTimeout
                 continue
             if ch.is_online:
@@ -94,7 +108,8 @@ def check_channel_state():
                     ch.started = False
                 if ch.expired():
                     ch.games = []
-        time.sleep(8)
+        save_obj(ch_list, 'history')
+        time.sleep(7)
 
 t = threading.Thread(target=check_channel_state, args=())
 t.start()
