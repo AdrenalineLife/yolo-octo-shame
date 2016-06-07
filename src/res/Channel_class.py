@@ -5,6 +5,7 @@ import requests
 import json
 import time
 import threading
+import traceback
 
 from src.lib.functions_general import save_obj, load_obj, pp
 
@@ -66,7 +67,17 @@ class Channel(object):
             if not need_time:
                 return ' → '.join([x['game'] for x in self.games])
             else:
-                return ' → '.join(self.to_str_w_time(x) for x in self.games) # доделать
+                for i, el in enumerate(self.games):
+                    try:
+                        el['ended']
+                    except KeyError:
+                        err_msg = '{}/{} // {}\n'.format(i, len(self.games) - 1, ' , '.join([x['game'] for x in self.games]))
+                        pp('HISTORY ERROR', 'ERROR')
+                        f_ = open('history_traceback.txt', 'at')
+                        f_.write(err_msg + '________________________\n')
+                        f_.close()
+                        return ''
+                return ' → '.join(self.to_str_w_time(x) for x in self.games)
         else:
             return 'Игр не было'
 
