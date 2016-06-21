@@ -44,6 +44,7 @@ class Irc(socket.socket):
         super().send('PRIVMSG {} :{}\n'.format(channel, message).encode())
 
     def get_irc_socket_object(self, recnct_cnt=5):
+        super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         super().settimeout(10)  # default 10
 
         serv = self.config['server']
@@ -53,6 +54,7 @@ class Irc(socket.socket):
         except Exception:
             if recnct_cnt > 0:
                 pp('Cannot connect to server ({}:{}), trying again.'.format(serv, self.config['port']), 'error')
+                super().close()
                 time.sleep((5 - recnct_cnt)**2)
                 return self.get_irc_socket_object(recnct_cnt=recnct_cnt - 1)
             else:
