@@ -4,6 +4,7 @@ Simple IRC Bot for Twitch.tv
 Developed by Aidan Thomson <aidraj0@gmail.com>
 """
 
+import re
 import src.lib.irc as irc_
 import src.lib.functions_commands as f_commands
 from src.lib.functions_general import *
@@ -21,6 +22,18 @@ class Roboraj(object):
         pbot(resp, channel)
         self.irc.send_message(resp, channel)
 
+    def check_for_sub(self, msg):
+        # TODO test this
+        exp1 = r'^@badges=.+emotes=.*;login=([a-zA-Z0-9_\\]+);.*;msg-id=resub;msg-param-months=([0-9]+);.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*'
+        exp2 = r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!'
+        res = re.findall(exp1, msg) or re.findall(exp2, msg)
+        if res:
+            res = res[0]
+        else:
+            return tuple()
+        return (res[0], res[1], 0) if len(res) == 2 else (res[2], res[0], res[1])
+
+
     def run(self):
         config = self.config
         self.irc.get_irc_socket_object()
@@ -30,10 +43,12 @@ class Roboraj(object):
         pbot_not_on_cd = 'Command is valid and not on cooldown. ({}) ({})'
 
         while True:
+            time.sleep(0.005)
             try:
                 data = self.irc.recv(config['socket_buffer_size']).decode().rstrip()
             except Exception:
                 data = 'empty'
+
 
             if time.time() - f_commands.commands['!ragnaros']['time'] >= 7:
                 f_commands.commands['!ragnaros']['time'] = time.time()
@@ -48,9 +63,7 @@ class Roboraj(object):
                         self.send_to_chat(duel_resp, channel=ch)
                 f_commands.commands['!duel']['time'] = time.time()
 
-            data_list = data.split('\r\n')
-
-            for data_line in data_list:
+            for data_line in data.split('\r\n'):
                 if len(data_line) == 0:
                     pp('Connection was lost, reconnecting.')
                     self.irc.get_irc_socket_object()
@@ -58,14 +71,17 @@ class Roboraj(object):
                 if config['debug'] and data_line != 'empty':
                     print(data_line)
 
+                if self.check_for_sub(data_line):
+                    print(self.check_for_sub(data_line))
+
                 # check for ping, reply with pong
                 self.irc.check_for_ping(data_line)
 
                 if self.irc.check_for_message(data_line):
                     msg = Message(data_line)
-                    #print(msg)
 
-                    ppi(msg.chan, msg.message, msg.disp_name)
+                    if not config['debug']:
+                        ppi(msg.chan, msg.message, msg.disp_name)
 
                     f_commands.commands['!ragnaros']['function'](['add'], msg)
 
