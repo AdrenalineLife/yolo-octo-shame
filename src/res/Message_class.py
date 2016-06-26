@@ -1,41 +1,18 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Life'
 
-import re
-import traceback
-from src.lib.functions_general import *
-
 
 class Message(object):
-    def __init__(self, data, expl=False, name=None, mes=None, chan_=None):
-        if not expl:
-            try:
-                self.name = re.findall(r'@([a-zA-Z0-9_]+)[.]tmi[.]twitch[.]tv PRIVMSG', data)[0]
-                self.disp_name = re.findall(r';display-name=([a-zA-Z0-9_]*)(\\s)*;', data)[0][0]
-                if not self.disp_name:
-                    self.disp_name = self.name
-                self.message = re.findall(r'@[a-zA-Z0-9_]+[.]tmi[.]twitch[.]tv PRIVMSG #[a-z0-9_]+ :(.*)', data)[0]
-                self.chan = re.findall(r'@[a-zA-Z0-9_]+[.]tmi[.]twitch[.]tv PRIVMSG (.*?) :', data)[0]
-                self.color = re.findall(r'.*;color=([A-Z0-9#]*);', data)[0]
-                self.is_mod = (re.findall(r';mod=([01]);', data)[0] == '1') or (self.chan[1:] == self.name)
-                self.is_sub = re.findall(r';subscriber=([01]);', data)[0] == '1'
-                self.is_turbo = re.findall(r';turbo=([01]);', data)[0] == '1'
-            except Exception as ee:
-                err_msg = data + '\n' + traceback.format_exc()
-                pp('MESSAGE PARSING ERROR, look at error_traceback.txt', 'ERROR')
-                f_ = open('error_traceback.txt', 'at')
-                f_.write(err_msg + '______________________\n')
-                f_.close()
-                self.name, self.disp_name, self.chan, self.message = '', '*ERROR*', '#', ''
-        else:
-            self.disp_name = name
-            self.name = name
-            self.message = mes
-            self.chan = chan_
-            self.color = ''
-            self.is_mod = False
-            self.is_sub = False
-            self.is_turbo = False
+    def __init__(self, name, disp, msg, chan, color='', is_sub='0', is_mod='0', is_turbo='0', m_id=''):
+        self.name = name.replace('\s', '')
+        self.disp_name = disp.replace('\s', '') if disp else self.name
+        self.message = msg
+        self.chan = chan
+        self.color = color
+        self.is_mod = is_mod == '1'
+        self.is_sub = is_sub == '1'
+        self.is_turbo = is_turbo == '1'
+        self.msg_id = m_id
 
     def __repr__(self):
-        return '[s:{x.is_sub}, m:{x.is_mod} {x.chan}] <{x.disp_name}> {x.message}'.format(x=self)
+        return '[{x.msg_id} s:{x.is_sub}, m:{x.is_mod}, t:{x.is_turbo} {x.chan}] <{x.disp_name}> {x.message}'.format(x=self)

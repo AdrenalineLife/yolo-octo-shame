@@ -15,6 +15,15 @@ class Roboraj(object):
     def __init__(self, config):
         self.config = config
         self.irc = irc_.Irc(config)
+        self.msg_pat = re.compile(r'@badges=.*;color=(.*);display-name=([a-zA-Z0-9_\\]*);emotes=.*;id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*subscriber=([01]);.*turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
+
+    def parse_message(self, msg):
+        try:
+            r = self.msg_pat.findall(msg)[0]
+        except IndexError:
+            print('>'*10, '\n', msg)
+        # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id
+        return r[6], r[1], r[8], r[7], r[0], r[4], r[3], r[5], r[2]
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
@@ -49,17 +58,16 @@ class Roboraj(object):
             except Exception:
                 data = 'empty'
 
-
             if time.time() - f_commands.commands['!ragnaros']['time'] >= 7:
                 f_commands.commands['!ragnaros']['time'] = time.time()
                 for ch in config['channels']:
-                    ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], Message(None, True, '', '', ch))
+                    ragn_resp = f_commands.commands['!ragnaros']['function'](['check'], Message('', '', '', ch))
                     for r in ragn_resp:
                         self.send_to_chat(r, channel=ch)
 
             if time.time() - f_commands.commands['!duel']['time'] >= 5:
                 for ch in config['channels']:
-                    for duel_resp in f_commands.commands['!duel']['function'](['chk'], Message(None, True, '', '', ch)):
+                    for duel_resp in f_commands.commands['!duel']['function'](['chk'], Message('', '', '', ch)):
                         self.send_to_chat(duel_resp, channel=ch)
                 f_commands.commands['!duel']['time'] = time.time()
 
@@ -71,14 +79,10 @@ class Roboraj(object):
                 if config['debug'] and data_line != 'empty':
                     print(data_line)
 
-                if self.check_for_sub(data_line):
-                    print(self.check_for_sub(data_line))
-
-                # check for ping, reply with pong
                 self.irc.check_for_ping(data_line)
 
                 if self.irc.check_for_message(data_line):
-                    msg = Message(data_line)
+                    msg = Message(*self.parse_message(data_line))
 
                     if not config['debug']:
                         ppi(msg.chan, msg.message, msg.disp_name)
