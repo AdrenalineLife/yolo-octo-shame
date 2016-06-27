@@ -33,14 +33,26 @@ class Roboraj(object):
 
     def check_for_sub(self, msg):
         # TODO test this
-        exp1 = r'^@badges=.+emotes=.*;login=([a-zA-Z0-9_\\]+);.*;msg-id=resub;msg-param-months=([0-9]+);.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*'
+        exp1 = r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=([a-zA-Z0-9_]+)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*'
         exp2 = r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!'
         res = re.findall(exp1, msg) or re.findall(exp2, msg)
         if res:
             res = res[0]
         else:
             return tuple()
-        return (res[0], res[1], 0) if len(res) == 2 else (res[2], res[0], res[1])
+        return (res[0], res[1].replace('\s', ''), 0) if len(res) == 2 else res[::-1]
+
+    def sub_greetings(self, sub_info):
+        if not sub_info:
+            return None
+        resp = f_commands.commands['!sub_greetings']['function'](sub_info, None)
+        if resp:
+            if type(resp) == list:
+                for r in resp:
+                    self.send_to_chat(r, channel=sub_info[0])
+            else:
+                self.send_to_chat(resp, channel=sub_info[0])
+        f_commands.commands['!sub_greetings']['time'] = time.time()
 
 
     def run(self):
@@ -80,6 +92,7 @@ class Roboraj(object):
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)
+                self.sub_greetings(self.check_for_sub(data_line))
 
                 if self.irc.check_for_message(data_line):
                     msg = Message(*self.parse_message(data_line))

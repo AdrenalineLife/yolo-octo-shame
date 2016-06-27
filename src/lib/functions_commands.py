@@ -53,16 +53,3 @@ def check_returns_function(command):
 
 def pass_to_function(command, args, msg):
     return commands[command]['function'](args, msg)
-
-'''
-def has_access(command, username, channel):
-    if username == channel[1:]: return True
-    if username == config['username'].lower(): return True
-    if channel not in config['access']:
-        return True
-    else:
-        if command not in config['access'][channel]:
-            return True
-        else:
-            return username in config['access'][channel][command]
-'''

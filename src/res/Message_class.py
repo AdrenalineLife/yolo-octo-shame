@@ -15,4 +15,4 @@ class Message(object):
         self.msg_id = m_id
 
     def __repr__(self):
-        return '[{x.msg_id} s:{x.is_sub}, m:{x.is_mod}, t:{x.is_turbo} {x.chan}] <{x.disp_name}> {x.message}'.format(x=self)
+        return '[s:{x.is_sub}, m:{x.is_mod}, t:{x.is_turbo} {x.chan}] <{x.disp_name}> {x.message}'.format(x=self)
