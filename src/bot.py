@@ -16,6 +16,8 @@ class Roboraj(object):
         self.config = config
         self.irc = irc_.Irc(config)
         self.msg_pat = re.compile(r'@badges=.*;color=(.*);display-name=([a-zA-Z0-9_\\]*);emotes=.*;id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*subscriber=([01]);.*turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
+        self.resub_pat = re.compile(r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=([a-zA-Z0-9_]+)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*')
+        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!')
 
     def parse_message(self, msg):
         try:
@@ -33,11 +35,9 @@ class Roboraj(object):
 
     def check_for_sub(self, msg):
         # TODO test this
-        exp1 = r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=([a-zA-Z0-9_]+)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*'
-        exp2 = r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!'
-        res = re.findall(exp1, msg) or re.findall(exp2, msg)
+        res = self.resub_pat.search(msg) or self.sub_pat.search(msg)
         if res:
-            res = res[0]
+            res = res.groups()
         else:
             return tuple()
         return (res[0], res[1].replace('\s', ''), 0) if len(res) == 2 else res[::-1]
