@@ -18,12 +18,17 @@ class Roboraj(object):
         self.msg_pat = re.compile(r'@badges=.*;color=(.*);display-name=([a-zA-Z0-9_\\]*);emotes=.*;id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*subscriber=([01]);.*turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
         self.resub_pat = re.compile(r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=([a-zA-Z0-9_]+)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*')
         self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!')
+        self.is_msg_pat = re.compile(r'.*;color=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
+
+    def check_for_message(self, data):
+        return bool(self.is_msg_pat.match(data))
 
     def parse_message(self, msg):
         try:
             r = self.msg_pat.findall(msg)[0]
         except IndexError:
             print('>'*10, '\n', msg)
+            return '*ERROR*', '', '', '#', '', '0', '0', '0', ''
         # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id
         return r[6], r[1], r[8], r[7], r[0], r[4], r[3], r[5], r[2]
 
@@ -70,6 +75,10 @@ class Roboraj(object):
             except Exception:
                 data = 'empty'
 
+            if len(data) == 0:
+                pp('Connection was lost, reconnecting.')
+                self.irc.get_irc_socket_object()
+
             if time.time() - f_commands.commands['!ragnaros']['time'] >= 7:
                 f_commands.commands['!ragnaros']['time'] = time.time()
                 for ch in config['channels']:
@@ -84,17 +93,13 @@ class Roboraj(object):
                 f_commands.commands['!duel']['time'] = time.time()
 
             for data_line in data.split('\r\n'):
-                if len(data_line) == 0:
-                    pp('Connection was lost, reconnecting.')
-                    self.irc.get_irc_socket_object()
-
                 if config['debug'] and data_line != 'empty':
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)
                 self.sub_greetings(self.check_for_sub(data_line))
 
-                if self.irc.check_for_message(data_line):
+                if self.check_for_message(data_line):
                     msg = Message(*self.parse_message(data_line))
 
                     if not config['debug']:
