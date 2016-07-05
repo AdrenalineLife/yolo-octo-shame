@@ -46,11 +46,10 @@ class Channel(object):
         game_name = self.shorten_game()
         if self.games:
             if self.games[-1]['game'] != game_name:
+                self.games[-1]['ended'] = time.time()
                 self.games.append({'game': game_name, 'started': time.time()})
-                #print('Adding >> ' + game_name)
         else:
             self.games.append({'game': game_name, 'started': time.time()})
-            #print('Adding >> ' + game_name)
 
     def expired(self):
         return time.time() - self.time_ > self.break_time
