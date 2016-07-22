@@ -18,10 +18,6 @@ class Duel(object):
         self.ban_time = seconds
         self.time = time.time()
 
-    @staticmethod
-    def max_reached(chan):
-        return len(duels[chan]) >= max_d
-
     def make_duel(self):
         return random.choice([self.first_name_disp, self.sec_name_disp])
 
@@ -88,7 +84,7 @@ say_now_allowed = "/me > {0} официально разрешил дуэли"
 say_suicide = "/me > {0} совершил самоубийство"
 
 
-def duel(args, msg):
+def duel(self, args, msg):
     if args and args[0] in ('on', 'off'):
         if msg.name in allowed_users:
             turned_on[msg.chan] = True if args[0] == 'on' else False
@@ -135,7 +131,7 @@ def duel(args, msg):
                 else:
                     return ''
 
-            if Duel.max_reached(msg.chan):
+            if len(duels[msg.chan]) >= max_d:
                 return say_max_reached
             if Duel.has_active_duel(msg.name, msg.chan):
                 return say_have_active
@@ -162,4 +158,3 @@ if __name__ == '__main__':
     print(user_status('adrenaline_life', 'nastjanastja'))
     print(user_status('a_o_w', 'nastjanastja'))
     print(user_status('c_a_k_e', 'nastjanastja'))
-    print(Duel.max_reached('#a_o_w'))

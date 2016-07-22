@@ -72,7 +72,7 @@ passw = auth_plug_pass
 not_logged = True
 
 
-def plugsong(args, chan, username):
+def plugsong(self, args, chan):
     global not_logged
     try:
         if not_logged:
@@ -113,4 +113,4 @@ def plugsong(args, chan, username):
     else:
         return 'В данный момент музыка на PlugDJ не играет'
 
-plugsong([], 'channel', 'username')
+#plugsong(None, [], 'channel')

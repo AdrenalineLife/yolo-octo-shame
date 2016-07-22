@@ -12,7 +12,7 @@ turned_on = {
 allowed_users = ('a_o_w', 'adrenaline_life', 'c_a_k_e', 'nastjanastja')
 
 
-def lavki(args, msg):
+def lavki(self, args, msg):
     if len(args) == 1 and args[0] in ('on', 'off'):
         if msg.name in allowed_users:
             turned_on[msg.chan] = True if args[0] == 'on' else False

@@ -17,7 +17,7 @@ greetings = {
     }
 }
 
-def sub_greetings(args, msg):
+def sub_greetings(self, args, msg):
     global greetings
     chan, name, month = args
     try:

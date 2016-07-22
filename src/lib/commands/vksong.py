@@ -12,11 +12,11 @@ groups = {
 }
 
 
-def vksong(args, msg):
+def vksong(self, args, msg):
     try:
         vk_id = groups[msg.chan]
     except KeyError:
-        return 'Неизвестна группа vk для этого канала'
+        return '/w (sender) Неизвестна группа vk для этого канала'
     vk_token = auth_vk_token
     vk_request = 'https://api.vk.com/method/status.get?group_id=%s&access_token=%s' % (vk_id, vk_token)
     try:
@@ -35,5 +35,3 @@ def vksong(args, msg):
         return 'Сейчас играет: %s - %s [%s]' % (status['response']['audio']['artist'],
                                                 status['response']['audio']['title'],
                                                 timestr)
-
-#print(vksong([], '#c_a_k_e', 'username'))

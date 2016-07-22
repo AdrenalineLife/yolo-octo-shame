@@ -5,9 +5,6 @@ import requests
 import json
 import time
 import threading
-import traceback
-
-from src.lib.functions_general import save_obj, load_obj, pp
 
 
 class Channel(object):
@@ -66,60 +63,6 @@ class Channel(object):
             if not need_time:
                 return ' → '.join([x['game'] for x in self.games])
             else:
-                for i, el in enumerate(self.games):
-                    try:
-                        el['ended']
-                    except KeyError:
-                        err_msg = '{}/{} // {}\n'.format(i, len(self.games) - 1, ' , '.join([x['game'] for x in self.games]))
-                        pp('HISTORY ERROR', 'ERROR')
-                        f_ = open('history_traceback.txt', 'at')
-                        f_.write(err_msg + '________________________\n')
-                        f_.close()
-                        return ''
                 return ' → '.join(self.to_str_w_time(x) for x in self.games)
         else:
             return 'Игр не было'
-
-
-req_list = [
-    'c_a_k_e',
-    'nastjanastja',
-]
-
-try:
-    ch_list = load_obj('history')
-except FileNotFoundError:
-    ch_list = [Channel(x) for x in req_list]
-except Exception:
-    ch_list = [Channel(x) for x in req_list]
-    pp("Could not load channel file", 'error')
-else:
-    existing_ch = [x.name for x in ch_list]
-    for x in req_list:
-        if x not in existing_ch:
-            ch_list.append(Channel(x))
-    del existing_ch
-
-
-def check_channel_state():
-    while True:
-        for ch in ch_list:
-            try:
-                ch.get_state()
-            except Exception:  # ConnectionError, ConnectTimeout
-                continue
-            if ch.is_online:
-                ch.add_game()
-                ch.started = True
-            else:
-                if ch.started:
-                    ch.games[-1]['ended'] = time.time()
-                    ch.time_ = time.time()
-                    ch.started = False
-                if ch.expired():
-                    ch.games = []
-        save_obj(ch_list, 'history')
-        time.sleep(7)
-
-t = threading.Thread(target=check_channel_state, args=())
-t.start()

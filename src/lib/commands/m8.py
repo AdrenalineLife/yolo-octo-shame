@@ -18,7 +18,7 @@ strip_phrases = (
 )
 
 
-def m8(args, msg):
+def m8(self, args, msg):
     if len(args) == 1 and args[0] in ('on', 'off'):
         if msg.name in allowed_users:
             turned_on[msg.chan] = True if args[0] == 'on' else False

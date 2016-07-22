@@ -39,7 +39,7 @@ class Ragnaros(object):
         self.turned_on = True if s == 'on' else False
 
     def __repr__(self):
-        return json.dumps(self.__dict__, indent=0) #'{} {}'.format(self.name, self.turned_on)
+        return json.dumps(self.__dict__, indent=0)
 
 
 allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'adrenaline_life')
@@ -58,17 +58,17 @@ except Exception:
     ragn_list = [Ragnaros(x) for x in required_ch]
     pp("Could not load ragnaros file", 'error')
 else:
-    existing_ragn = [x.name for x in ragn_list]
+    loaded_ragn = [x.name for x in ragn_list]
     for x in required_ch:
-        if x not in existing_ragn:
+        if x not in loaded_ragn:
             ragn_list.append(Ragnaros(x))
-    del existing_ragn
+    del loaded_ragn
     for x in ragn_list:
         x.victims = dict()
         x.last_time_hit = time.time()
 
 
-def ragnaros(args, msg):
+def ragnaros(self, args, msg):
     ragn = [x for x in ragn_list if x.name == msg.chan]
     if not ragn:
         return ''

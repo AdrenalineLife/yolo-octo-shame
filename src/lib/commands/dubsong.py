@@ -10,7 +10,7 @@ dub_rooms = {
 }
 
 
-def dubsong(args, msg):
+def dubsong(self, args, msg):
     try:
         req = 'https://api.dubtrack.fm/room/{}'.format(dub_rooms[msg.chan])
     except KeyError:
