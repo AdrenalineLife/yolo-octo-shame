@@ -76,6 +76,8 @@ class Roboraj(object):
                 except AttributeError:
                     missing_func.append(command)
                     pp('No function found: ' + command, 'error')
+        if '!whatsong' in self.cmd_headers:
+            self.cmd_headers['!whatsong']['activated'] = False
 
         # deleting commands from dict which we did not find
         for f in missing_func:
@@ -181,6 +183,15 @@ class Roboraj(object):
                     for duel_resp in self.call_func('!duel', ['chk'], Message('', '', '', ch)):
                         self.send_to_chat(duel_resp, channel=ch)
                 self.cmd_headers['!duel']['time'] = time.time()
+
+            if self.cmd_headers['!whatsong']['activated'] and time.time() - self.cmd_headers['!whatsong']['time'] >= 20.5:
+                song_resp = self.call_func('!whatsong', ['chk'], None)
+                song_resp = [song_resp] if type(song_resp) != list else song_resp
+                for r in song_resp:
+                    self.send_to_chat(r,
+                                      channel=self.cmd_headers['!whatsong']['req_chan'],
+                                      username=self.cmd_headers['!whatsong']['req_name'])
+                self.cmd_headers['!whatsong']['activated'] = False
 
             for data_line in data.split('\r\n'):
                 if config['debug'] and data_line != 'empty':
