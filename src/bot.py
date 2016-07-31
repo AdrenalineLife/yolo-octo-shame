@@ -24,11 +24,14 @@ class Roboraj(object):
         self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!')
         self.is_msg_pat = re.compile(r'.*;color=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
 
-        #  list of channels (rooms)
+        # list of channels (rooms)
         self.ch_list = list()
 
-        #  info about commands (dict)
+        # info about commands (dict)
         self.cmd_headers = headers.commands
+
+        # headers for all api requests
+        self.req_headers = {'Client-ID': self.config['Client-ID']}
 
     def check_for_message(self, data):
         return bool(self.is_msg_pat.match(data))
@@ -76,8 +79,8 @@ class Roboraj(object):
                 except AttributeError:
                     missing_func.append(command)
                     pp('No function found: ' + command, 'error')
-        if '!whatsong' in self.cmd_headers:
-            self.cmd_headers['!whatsong']['activated'] = False
+            if 'return' not in self.cmd_headers[command] or not self.cmd_headers[command]['return']:
+                missing_func.append(command)
 
         # deleting commands from dict which we did not find
         for f in missing_func:
@@ -174,8 +177,7 @@ class Roboraj(object):
             if time.time() - self.cmd_headers['!ragnaros']['time'] >= 7:
                 self.cmd_headers['!ragnaros']['time'] = time.time()
                 for ch in config['channels']:
-                    ragn_resp = self.call_func('!ragnaros', ['check'], Message('', '', '', ch))
-                    for r in ragn_resp:
+                    for r in self.call_func('!ragnaros', ['check'], Message('', '', '', ch)):
                         self.send_to_chat(r, channel=ch)
 
             if time.time() - self.cmd_headers['!duel']['time'] >= 5:
@@ -183,15 +185,6 @@ class Roboraj(object):
                     for duel_resp in self.call_func('!duel', ['chk'], Message('', '', '', ch)):
                         self.send_to_chat(duel_resp, channel=ch)
                 self.cmd_headers['!duel']['time'] = time.time()
-
-            if self.cmd_headers['!whatsong']['activated'] and time.time() - self.cmd_headers['!whatsong']['time'] >= 20.5:
-                song_resp = self.call_func('!whatsong', ['chk'], None)
-                song_resp = [song_resp] if type(song_resp) != list else song_resp
-                for r in song_resp:
-                    self.send_to_chat(r,
-                                      channel=self.cmd_headers['!whatsong']['req_chan'],
-                                      username=self.cmd_headers['!whatsong']['req_name'])
-                self.cmd_headers['!whatsong']['activated'] = False
 
             for data_line in data.split('\r\n'):
                 if config['debug'] and data_line != 'empty':
