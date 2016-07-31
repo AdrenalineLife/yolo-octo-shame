@@ -1,22 +1,23 @@
 # -*- coding: utf-8 -*-
 
 config = {
-
     # details required to login to twitch IRC server
-    'server': 'irc.twitch.tv',
+    'server': 'irc.chat.twitch.tv',
     'port': 6667,
     'username': '',
     'oauth_password': '',  # get this from http://twitchapps.com/tmi/
+    'Client-ID': '',  # register an app in your twitch account settings
 
-    'server_w': '199.9.253.119',
+    # color of the bot in chat
+    'color': 'Blue',
 
-    # channel to join
-    'channels': ['', ''], # chan name starts with '#'
+    # channels to join
+    'channels': ['#chan1', '#chan2'],  # chan name starts with '#'
 
-    # if set to true will display any data received
+    # if set to true will display raw data received
     'debug': False,
 
-    'cron': {
+    'cron': { #  CRON IS NOT SUPPORTED ATM
         '#channel_one': {
             'run_cron': False,
         # set this to false if you want don't want to run the cronjob but you want to preserve the messages etc

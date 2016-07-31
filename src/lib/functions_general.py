@@ -6,6 +6,7 @@ red = "\033[01;31m{0}\033[00m"
 grn = "\033[01;36m{0}\033[00m"
 blu = "\033[01;34m{0}\033[00m"
 cya = "\033[01;36m{0}\033[00m"
+yel = "\033[01;33m{0}\033[00m"
 
 clr = False  # Use colouring or not
 
@@ -13,8 +14,11 @@ clr = False  # Use colouring or not
 def pp(message, mtype='INFO'):
     mtype = mtype.upper()
 
-    if clr and mtype == "ERROR":
-        mtype = red.format(mtype)
+    if clr:
+        if mtype == "ERROR":
+            mtype = red.format(mtype)
+        elif mtype == 'WARNING':
+            mtype = yel.format(mtype)
 
     print('[%s] [%s] %s' % (time.strftime('%H:%M:%S', time.localtime()), mtype, message))
 

@@ -7,6 +7,7 @@ Developed by Aidan Thomson <aidraj0@gmail.com>
 import re
 import importlib
 import threading
+import requests
 
 import src.lib.irc as irc_
 import src.lib.command_headers as headers
@@ -49,15 +50,15 @@ class Roboraj(object):
         try:
             self.ch_list = load_obj('history')
         except FileNotFoundError:
-            self.ch_list = [Channel(x.lstrip('#')) for x in self.config['channels']]
+            self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
         except Exception:
-            self.ch_list = [Channel(x.lstrip('#')) for x in self.config['channels']]
+            self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
             pp("Could not load channel file", 'error')
         else:
             loaded_ch = [x.name for x in self.ch_list]
             for x in self.config['channels']:
                 if x.lstrip('#') not in loaded_ch:
-                    self.ch_list.append(Channel(x.lstrip('#')))
+                    self.ch_list.append(Channel(x.lstrip('#'), self.req_headers))
             del loaded_ch
 
     def load_command_funcs(self):
@@ -156,6 +157,14 @@ class Roboraj(object):
         self.irc.get_irc_socket_object()
         self.load_or_create_channel_list()
         self.load_command_funcs()
+        try:
+            if requests.get('https://api.twitch.tv/kraken', headers=self.req_headers, timeout=4).json()['identified']:
+                pp('Your Client-ID is ok, you can use api calls')
+            else:
+                pp('Your Client-ID is not identified, your api calls will fail', 'warning')
+        except Exception:
+            pass
+
         trd = threading.Thread(target=self.check_channel_state, args=())
         trd.start()
 

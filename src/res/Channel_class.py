@@ -4,17 +4,19 @@ __author__ = 'Life'
 import requests
 import json
 import time
-import threading
 
 
 class Channel(object):
-    def __init__(self, name, break_time=1200):
+    def __init__(self, name, headers, break_time=630):
         self.name = name.lower()
         self.is_online = False
         self.started = False
         self.curr_game = ''
 
-        # время offline, за которое список игр не обнуляется (default 20 m)
+        # headers of api call
+        self.api_headers = headers
+
+        # время offline, за которое список игр не обнуляется
         self.break_time = break_time
 
         # время, когда стрим становится offline
@@ -25,7 +27,7 @@ class Channel(object):
 
     def get_state(self):
         req = 'https://api.twitch.tv/kraken/streams/{0}'
-        resp = requests.get(req.format(self.name), timeout=3).json()
+        resp = requests.get(req.format(self.name), headers=self.api_headers, timeout=3).json()
         self.is_online = resp['stream'] is not None
         self.curr_game = resp['stream']['channel']['game'] if self.is_online else ''
 
