@@ -76,10 +76,10 @@ class Roboraj(object):
                     setattr(self.__class__, command, getattr(module, command[1:]))
                 except ImportError:
                     missing_func.append(command)
-                    pp('No module found: ' + command, 'error')
+                    pp('No module found: ' + command, 'warning')
                 except AttributeError:
                     missing_func.append(command)
-                    pp('No function found: ' + command, 'error')
+                    pp('No function found: ' + command, 'warning')
             if 'return' not in self.cmd_headers[command] or not self.cmd_headers[command]['return']:
                 missing_func.append(command)
 

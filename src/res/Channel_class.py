@@ -25,11 +25,29 @@ class Channel(object):
         # список игр, которые были на стриме
         self.games = []
 
+        # текущее количество зрителей
+        self.viewers = 0
+
+        # время начала стрима
+        self.created_at = ''
+
+        self.video_height = 0
+        self.fps = 0
+        self.delay = 0
+        self.status = ''
+
     def get_state(self):
         req = 'https://api.twitch.tv/kraken/streams/{0}'
         resp = requests.get(req.format(self.name), headers=self.api_headers, timeout=3).json()
         self.is_online = resp['stream'] is not None
-        self.curr_game = resp['stream']['channel']['game'] if self.is_online else ''
+        if self.is_online:
+            self.curr_game = resp['stream']['channel']['game']
+            self.viewers = resp['stream']['viewers']
+            self.created_at = resp['stream']['created_at']
+            self.video_height = resp['stream']['video_height']
+            self.fps = resp['stream']['average_fps']
+            self.delay = resp['stream']['delay']
+            self.status = resp['stream']['channel']['status']
 
     def shorten_game(self):
         short_names = {
