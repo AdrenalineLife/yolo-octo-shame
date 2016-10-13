@@ -8,6 +8,7 @@ import re
 import importlib
 import threading
 import requests
+import random
 
 import src.lib.irc as irc_
 import src.lib.command_headers as headers
@@ -20,9 +21,9 @@ class Roboraj(object):
     def __init__(self, config):
         self.config = config
         self.irc = irc_.Irc(config)
-        self.msg_pat = re.compile(r'@badges=.*;color=(.*);display-name=([a-zA-Z0-9_\\]*);emotes=.*;id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*subscriber=([01]);.*turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
-        self.resub_pat = re.compile(r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=([a-zA-Z0-9_]+)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*')
-        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :([a-zA-Z0-9_\\]+) just subscribed!')
+        self.msg_pat = re.compile(r'@badges=.*;color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
+        self.resub_pat = re.compile(r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*')
+        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed!')
         self.is_msg_pat = re.compile(r'.*;color=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
 
         # list of channels (rooms)
@@ -43,8 +44,8 @@ class Roboraj(object):
         except IndexError:
             print('>'*10, '\n', msg)
             return '*ERROR*', '', '', '#', '', '0', '0', '0', ''
-        # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id
-        return r[6], r[1], r[8], r[7], r[0], r[4], r[3], r[5], r[2]
+        # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id, emote_info
+        return r[7], r[1], r[9], r[8], r[0], r[5], r[4], r[6], r[3], r[2]
 
     def load_or_create_channel_list(self):
         try:
@@ -138,7 +139,8 @@ class Roboraj(object):
             res = res.groups()
         else:
             return tuple()
-        return (res[0], res[1].replace('\s', ''), 0) if len(res) == 2 else res[::-1]
+        # in case of new sub, month = 0
+        return (res[0], res[1].replace('\s', ''), 0) if len(res) == 2 else (res[2], res[1], int(res[0]))
 
     def sub_greetings(self, sub_info):
         if not sub_info:
@@ -157,13 +159,16 @@ class Roboraj(object):
         self.irc.get_irc_socket_object()
         self.load_or_create_channel_list()
         self.load_command_funcs()
+
         try:
-            if requests.get('https://api.twitch.tv/kraken', headers=self.req_headers, timeout=4).json()['identified']:
+            if requests.get('https://api.twitch.tv/kraken', headers=self.req_headers, timeout=5).json()['identified']:
                 pp('Your Client-ID is ok, you can use api calls')
             else:
                 pp('Your Client-ID is not identified, your api calls will fail', 'warning')
+        except KeyError:
+            pp("There is no 'identified' key, client id wasn't checked", mtype='WARNING')
         except Exception:
-            pass
+            pp("Client ID wasn't checked", mtype='WARNING')
 
         trd = threading.Thread(target=self.check_channel_state, args=())
         trd.start()
@@ -173,7 +178,7 @@ class Roboraj(object):
         pbot_not_on_cd = 'Command is valid and not on cooldown. ({}) ({})'
 
         while True:
-            time.sleep(0.005)
+            time.sleep(0.003)
             try:
                 data = self.irc.recv(config['socket_buffer_size']).decode().rstrip()
             except Exception:
@@ -204,6 +209,10 @@ class Roboraj(object):
 
                 if self.check_for_message(data_line):
                     msg = Message(*self.parse_message(data_line))
+
+                    ##### RANDOM CUSTOM STUFF
+
+                    ##### END OF RANDOM CUSTOM STUFF
 
                     if not config['debug']:
                         ppi(msg.chan, msg.message, msg.disp_name)
