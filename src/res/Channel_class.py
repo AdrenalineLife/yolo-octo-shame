@@ -28,6 +28,9 @@ class Channel(object):
         # текущее количество зрителей
         self.viewers = 0
 
+        # пик зрителей за стрим
+        self.max_viewers = 0
+
         # время начала стрима
         self.created_at = ''
 
@@ -48,6 +51,8 @@ class Channel(object):
             self.fps = resp['stream']['average_fps']
             self.delay = resp['stream']['delay']
             self.status = resp['stream']['channel']['status']
+            if self.viewers > self.max_viewers:
+                self.max_viewers = self.viewers
 
     def shorten_game(self):
         short_names = {
@@ -81,7 +86,7 @@ class Channel(object):
         if self.games:
             self.games[-1]['ended'] = time.time()
             if not need_time:
-                return ' → '.join([x['game'] for x in self.games])
+                return ' → '.join(x['game'] for x in self.games)
             else:
                 return ' → '.join(self.to_str_w_time(x) for x in self.games)
         else:
