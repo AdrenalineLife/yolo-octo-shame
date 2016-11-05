@@ -50,7 +50,7 @@ class Message(object):
         return False
 
     def is_normal_disp_name(self):
-        return bool(re.match(r'^[a-zA-Z0-9\\]+$', self.disp_name))
+        return bool(re.match(r'^[a-zA-Z0-9_\\]+$', self.disp_name))
 
     def emotes(self):
         if not self.__emote_info__:

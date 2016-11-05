@@ -121,6 +121,7 @@ class Roboraj(object):
                     if ch.started:
                         ch.games[-1]['ended'] = time.time()
                         ch.time_ = time.time()
+                        ch.max_viewers = 0
                         ch.started = False
                     if ch.expired():
                         ch.games = []
@@ -156,6 +157,9 @@ class Roboraj(object):
 
     def run(self):
         config = self.config
+        if not config['oauth_password'].startswith('oauth:'):
+            pp("OAuth password should start with 'oauth:'", mtype='error')
+
         self.irc.get_irc_socket_object()
         self.load_or_create_channel_list()
         self.load_command_funcs()
