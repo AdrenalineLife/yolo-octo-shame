@@ -56,7 +56,11 @@ class Roboraj(object):
             self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
             pp("Could not load channel file", 'error')
         else:
+            # deleting unnacessery channels
+            self.ch_list[:] = [x for x in self.ch_list if '#' + x.name in self.config['channels']]
             loaded_ch = [x.name for x in self.ch_list]
+
+            # adding missing channels
             for x in self.config['channels']:
                 if x.lstrip('#') not in loaded_ch:
                     self.ch_list.append(Channel(x.lstrip('#'), self.req_headers))
@@ -126,7 +130,7 @@ class Roboraj(object):
                     if ch.expired():
                         ch.games = []
             save_obj(self.ch_list, 'history')
-            time.sleep(9)
+            time.sleep(3)
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
@@ -206,7 +210,7 @@ class Roboraj(object):
 
             for data_line in data.split('\r\n'):
                 if config['debug'] and data_line != 'empty':
-                    print(data_line)
+                    pass#print(data_line)
 
                 self.irc.check_for_ping(data_line)
                 self.sub_greetings(self.check_for_sub(data_line))
