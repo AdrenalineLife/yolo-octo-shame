@@ -38,7 +38,7 @@ class Roboraj(object):
         # session for api requests to get streams info
         self.chans_request = requests.Session()
         self.chans_request.headers = self.req_headers
-        self.chans_request.params = ','.join(x[1:] for x in self.config['channels'])
+        self.chans_request.params = {'channel': ','.join(x[1:] for x in self.config['channels'])}
 
     def check_for_message(self, data):
         return bool(self.is_msg_pat.match(data))
@@ -127,7 +127,7 @@ class Roboraj(object):
                 pp("There is no 'streams' key in API response", mtype='ERROR')
                 time.sleep(4.0)
                 continue
-            
+
             for ch in self.ch_list:
                 chan_info = [x for x in resp if x['channel']['name'] == ch.name]
                 chan_info = chan_info[0] if chan_info else None
