@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Life'
 
-import requests
 import json
 import time
 
@@ -39,18 +38,16 @@ class Channel(object):
         self.delay = 0
         self.status = ''
 
-    def get_state(self):
-        req = 'https://api.twitch.tv/kraken/streams/{0}'
-        resp = requests.get(req.format(self.name), headers=self.api_headers, timeout=3).json()
-        self.is_online = resp['stream'] is not None
+    def get_state(self, chan_info):
+        self.is_online = chan_info is not None
         if self.is_online:
-            self.curr_game = resp['stream']['channel']['game']
-            self.viewers = resp['stream']['viewers']
-            self.created_at = resp['stream']['created_at']
-            self.video_height = resp['stream']['video_height']
-            self.fps = resp['stream']['average_fps']
-            self.delay = resp['stream']['delay']
-            self.status = resp['stream']['channel']['status']
+            self.curr_game = chan_info['channel']['game']
+            self.viewers = chan_info['viewers']
+            self.created_at = chan_info['created_at']
+            self.video_height = chan_info['video_height']
+            self.fps = chan_info['average_fps']
+            self.delay = chan_info['delay']
+            self.status = chan_info['channel']['status']
             if self.viewers > self.max_viewers:
                 self.max_viewers = self.viewers
 
@@ -91,3 +88,6 @@ class Channel(object):
                 return ' → '.join(self.to_str_w_time(x) for x in self.games)
         else:
             return 'Игр не было'
+
+    def __repr__(self):
+        return json.dumps(self.__dict__, indent=4)

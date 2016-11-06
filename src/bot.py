@@ -35,6 +35,11 @@ class Roboraj(object):
         # headers for all api requests
         self.req_headers = {'Client-ID': self.config['Client-ID']}
 
+        # session for api requests to get streams info
+        self.chans_request = requests.Session()
+        self.chans_request.headers = self.req_headers
+        self.chans_request.params = ','.join(x[1:] for x in self.config['channels'])
+
     def check_for_message(self, data):
         return bool(self.is_msg_pat.match(data))
 
@@ -113,10 +118,22 @@ class Roboraj(object):
 
     def check_channel_state(self):
         while True:
+            try:
+                resp = self.chans_request.get('https://api.twitch.tv/kraken/streams', timeout=5).json()['streams']
+            except requests.RequestException:
+                time.sleep(4.0)
+                continue
+            except KeyError:
+                pp("There is no 'streams' key in API response", mtype='ERROR')
+                time.sleep(4.0)
+                continue
+            
             for ch in self.ch_list:
+                chan_info = [x for x in resp if x['channel']['name'] == ch.name]
+                chan_info = chan_info[0] if chan_info else None
                 try:
-                    ch.get_state()
-                except Exception:  # ConnectionError, ConnectTimeout
+                    ch.get_state(chan_info)
+                except KeyError:
                     continue
                 if ch.is_online:
                     ch.add_game()
@@ -130,7 +147,7 @@ class Roboraj(object):
                     if ch.expired():
                         ch.games = []
             save_obj(self.ch_list, 'history')
-            time.sleep(3)
+            time.sleep(7.0)
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
@@ -210,7 +227,7 @@ class Roboraj(object):
 
             for data_line in data.split('\r\n'):
                 if config['debug'] and data_line != 'empty':
-                    pass#print(data_line)
+                    print(data_line)
 
                 self.irc.check_for_ping(data_line)
                 self.sub_greetings(self.check_for_sub(data_line))
