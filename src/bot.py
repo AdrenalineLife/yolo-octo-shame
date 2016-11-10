@@ -9,6 +9,8 @@ import importlib
 import threading
 import requests
 import random
+import traceback
+import json
 
 import src.lib.irc as irc_
 import src.lib.command_headers as headers
@@ -21,7 +23,7 @@ class Roboraj(object):
     def __init__(self, config):
         self.config = config
         self.irc = irc_.Irc(config)
-        self.msg_pat = re.compile(r'@badges=.*;color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
+        self.msg_pat = re.compile(r'@badges=(.*?);color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
         self.resub_pat = re.compile(r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*')
         self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed!')
         self.is_msg_pat = re.compile(r'.*;color=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
@@ -49,8 +51,8 @@ class Roboraj(object):
         except IndexError:
             print('>'*10, '\n', msg)
             return '*ERROR*', '', '', '#', '', '0', '0', '0', ''
-        # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id, emote_info
-        return r[7], r[1], r[9], r[8], r[0], r[5], r[4], r[6], r[3], r[2]
+        # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id, emote_info, badge_info
+        return r[8], r[2], r[10], r[9], r[1], r[6], r[5], r[7], r[4], r[3], r[0]
 
     def load_or_create_channel_list(self):
         try:
@@ -119,14 +121,19 @@ class Roboraj(object):
     def check_channel_state(self):
         while True:
             try:
-                resp = self.chans_request.get('https://api.twitch.tv/kraken/streams', timeout=5).json()['streams']
-            except requests.RequestException:
+                resp = self.chans_request.get('https://api.twitch.tv/kraken/streams', timeout=5.0)
+                if resp.status_code != 200:
+                    time.sleep(4.0)
+                    continue
+                resp = resp.json()['streams']
+            except (requests.RequestException, ValueError):
                 time.sleep(4.0)
                 continue
             except KeyError:
                 pp("There is no 'streams' key in API response", mtype='ERROR')
                 time.sleep(4.0)
                 continue
+            #print(json.dumps(resp, indent=4))
 
             for ch in self.ch_list:
                 chan_info = [x for x in resp if x['channel']['name'] == ch.name]
@@ -134,6 +141,7 @@ class Roboraj(object):
                 try:
                     ch.get_state(chan_info)
                 except KeyError:
+                    pp('Failed getting channel state', mtype='error')
                     continue
                 if ch.is_online:
                     ch.add_game()
@@ -147,7 +155,7 @@ class Roboraj(object):
                     if ch.expired():
                         ch.games = []
             save_obj(self.ch_list, 'history')
-            time.sleep(7.0)
+            time.sleep(9.0)
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)

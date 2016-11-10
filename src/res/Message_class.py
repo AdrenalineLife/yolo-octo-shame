@@ -13,7 +13,8 @@ zalgo_chars = ('͑','͚','̧','͌','̈́','̈','̓','̉','͂','͙','͘','̦','͉',
 
 class Message(object):
     def __init__(self, name, disp, msg, chan,
-                 color='', is_sub='0', is_mod='0', is_turbo='0', m_id='', emote_info='', use_nonlatin_name=False):
+                 color='', is_sub='0', is_mod='0', is_turbo='0', m_id='', emote_info='', badge_info='',
+                 use_nonlatin_name=False):
         self.name = name.replace('\s', '')
         self.disp_name = disp.replace('\s', '') if disp else self.name
         self.orig_disp_name = self.disp_name  # copy of original display name in case of changing "disp_name"
@@ -37,6 +38,7 @@ class Message(object):
             self.message = self.message[8:-1]
 
         self.__emote_info__ = emote_info
+        self.__badge_info__ = badge_info
 
     def is_zalgo(self, threshold=40):
         if len(self.message) < threshold:
