@@ -3,8 +3,10 @@ __author__ = 'Life'
 
 import datetime
 
+import src.res.shorten_games as shorten_games
 
-def up(self, args, msg):
+
+def uptime(self, args, msg):
     try:
         chan = next(x for x in self.ch_list if x.name == msg.chan[1:])
         if not chan.is_online:
@@ -13,6 +15,7 @@ def up(self, args, msg):
     except (StopIteration, ValueError):
         return ''
 
+    curr_game = shorten_games.shorten.get(chan.curr_game, chan.curr_game)
     h, m = divmod(diff.seconds, 3600)
     m, s = divmod(m, 60)
 
@@ -24,4 +27,4 @@ def up(self, args, msg):
     resp = 'Стрим идет %s | Игра: {g} | Смотрит {v}' % timestr
     if chan.max_viewers and chan.max_viewers > chan.viewers:
         resp += ' | Пик {max}'
-    return resp.format(d=diff.days, h=h, m=m, s=s, v=chan.viewers, g=chan.curr_game, max=chan.max_viewers)
+    return resp.format(d=diff.days, h=h, m=m, s=s, v=chan.viewers, g=curr_game, max=chan.max_viewers)

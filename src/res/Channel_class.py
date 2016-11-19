@@ -4,6 +4,8 @@ __author__ = 'Life'
 import json
 import time
 
+import src.res.shorten_games as shorten_games
+
 
 class Channel(object):
     def __init__(self, name, headers, break_time=630):
@@ -52,14 +54,7 @@ class Channel(object):
                 self.max_viewers = self.viewers
 
     def shorten_game(self):
-        short_names = {
-            'Counter-Strike: Global Offensive': 'CS:GO',
-            'Counter-Strike: Source': 'CS Source',
-            'Hearthstone: Heroes of Warcraft': 'Hearthstone',
-            'World of Warcraft': 'WoW',
-            "Tom Clancy's Rainbow Six: Siege": 'Rainbow Six: Siege'
-        }
-        return short_names.get(self.curr_game, self.curr_game)
+        return shorten_games.shorten.get(self.curr_game, self.curr_game)
 
     def add_game(self):
         game_name = self.shorten_game()
