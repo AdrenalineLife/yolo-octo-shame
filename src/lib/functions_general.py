@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import time
 import pickle
 
@@ -11,6 +12,7 @@ yel = "\033[01;33m{0}\033[00m"
 clr = False  # Use colouring or not
 
 
+# for printing general information
 def pp(message, mtype='INFO'):
     mtype = mtype.upper()
 
@@ -20,12 +22,13 @@ def pp(message, mtype='INFO'):
         elif mtype == 'WARNING':
             mtype = yel.format(mtype)
 
-    print('[%s] [%s] %s' % (time.strftime('%H:%M:%S', time.localtime()), mtype, message))
+    print('[{}] [{}] {}'.format(time.strftime('%H:%M:%S', time.localtime()), mtype, message))
 
 
+# for printing chat messages
 def ppi(channel, message, username):
     username = grn.format(username) if clr else username
-    msg = '[%s %s] <%s> %s' % (time.strftime('%H:%M:%S', time.localtime()), channel, username, message)  # grn
+    msg = '[{} {}] <{}> {}'.format(time.strftime('%H:%M:%S', time.localtime()), channel, username, message)
     try:
         print(msg)
     except UnicodeEncodeError as detail:
@@ -34,12 +37,13 @@ def ppi(channel, message, username):
         pp('UnicodeDecodeError: %s' % detail, 'error')
 
 
+# for printing what the bot sends to chat
 def pbot(message, channel=''):
     bot = red.format('BOT') if clr else 'BOT'
     if channel:
-        msg = '[%s %s] <%s> %s' % (time.strftime('%H:%M:%S', time.localtime()), channel, bot, message)  # red
+        msg = '[{} {}] <{}> {}'.format(time.strftime('%H:%M:%S', time.localtime()), channel, bot, message)
     else:
-        msg = '[%s] <%s> %s' % (time.strftime('%H:%M:%S', time.localtime()), bot, message)  # red
+        msg = '[{}] <{}> {}'.format(time.strftime('%H:%M:%S', time.localtime()), bot, message)
     try:
         print(msg)  # print(msg.encode(sys.stdout.encoding, errors='replace'))
     except UnicodeEncodeError as detail:
@@ -49,13 +53,13 @@ def pbot(message, channel=''):
 
 
 def save_obj(obj, name):
-    file_ = open(r'input_output\{}'.format(name), mode='wb')
+    file_ = open(r'input_output\{}.p'.format(name), mode='wb')
     pickle.dump(obj, file_, 3)
     file_.close()
 
 
 def load_obj(name):
-    file_ = open(r'input_output\{}'.format(name), mode='rb')
+    file_ = open(r'input_output\{}.p'.format(name), mode='rb')
     result = pickle.load(file_)
     file_.close()
     return result
