@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Life'
 
-'''
-PLEASE NOTE:
-http://plug.dj has been shut down
-due to inability to pay for hosting
-'''
-
 
 import json
+
 from urllib.parse import urljoin
 from requests import Session
 from re import search
@@ -16,7 +11,10 @@ from re import search
 from src.lib.functions_general import pp
 from src.res.authorization import *
 
-class LoginError(Exception): pass
+
+class LoginError(Exception):
+    pass
+
 
 def js_var(var, raw):
     """ really hacky-hack helper to extract js str var decls. """
@@ -24,8 +22,10 @@ def js_var(var, raw):
     match = search(lestr, raw)
     return None if match is None else match.group(1)
 
+
 def to_url(endpoint):
     return urljoin(rest_url_base, "/_/" + endpoint)
+
 
 def post(path, return_req=False, **kwargs):
     req = session.post(to_url(path), **kwargs)
@@ -33,11 +33,13 @@ def post(path, return_req=False, **kwargs):
         return req
     return req.json()
 
+
 def get(path, return_req=False, **kwargs):
     req = session.get(to_url(path), **kwargs)
     if return_req:
         return req
     return req.json()
+
 
 def login(email, password):
     get_root = session.get(urljoin(rest_url_base, "/"))
@@ -48,11 +50,14 @@ def login(email, password):
     json = {"csrf": csrf, "email": email, "password": password}
     return post("auth/login", json=json)
 
+
 def join_room(room):
     return post("rooms/join", json={"slug": room})
 
+
 def room_state():
     return get("rooms/state")
+
 
 def name_of_user(uid):
     if uid is None:
@@ -72,7 +77,14 @@ passw = auth_plug_pass
 not_logged = True
 
 
-def plugsong(self, args, chan):
+plug_rooms = {
+    '#nastjanastja': '',
+    '#1': 'nightcore-331',
+    '#2': 'i-the-80-s-and-90-s-1'
+}
+
+
+def plugsong(self, args, msg):
     global not_logged
     try:
         if not_logged:
@@ -81,7 +93,10 @@ def plugsong(self, args, chan):
                 return 'Ошибка подключения к PlugDJ'
             else:
                 not_logged = False
-            join_room('nastjadd')
+        if msg.chan not in plug_rooms:
+            return ''
+        else:
+            join_room(plug_rooms[msg.chan])
         state = room_state()
     except LoginError:
         not_logged = True
@@ -108,9 +123,9 @@ def plugsong(self, args, chan):
                                                           state['data'][0]['playback']['media']['title'],
                                                           timestr)
         djname = name_of_user(state['data'][0]['booth']['currentDJ'])
-        if djname: resp += '. DJ: %s' % djname
+        if djname:
+            resp += '. DJ: %s' % djname
         return resp
     else:
         return 'В данный момент музыка на PlugDJ не играет'
 
-#plugsong(None, [], 'channel')

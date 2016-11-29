@@ -21,6 +21,8 @@ def pp(message, mtype='INFO'):
             mtype = red.format(mtype)
         elif mtype == 'WARNING':
             mtype = yel.format(mtype)
+        elif mtype == 'FUNCTION':
+            mtype = cya.format(mtype)
 
     print('[{}] [{}] {}'.format(time.strftime('%H:%M:%S', time.localtime()), mtype, message))
 
@@ -32,9 +34,9 @@ def ppi(channel, message, username):
     try:
         print(msg)
     except UnicodeEncodeError as detail:
-        pp('UnicodeEncodeError: %s' % detail, 'error')
+        pp('UnicodeEncodeError: %s' % detail, mtype='error')
     except UnicodeDecodeError as detail:
-        pp('UnicodeDecodeError: %s' % detail, 'error')
+        pp('UnicodeDecodeError: %s' % detail, mtype='error')
 
 
 # for printing what the bot sends to chat
@@ -47,9 +49,9 @@ def pbot(message, channel=''):
     try:
         print(msg)  # print(msg.encode(sys.stdout.encoding, errors='replace'))
     except UnicodeEncodeError as detail:
-        pp('UnicodeEncodeError: %s' % detail, 'error')
+        pp('UnicodeEncodeError: %s' % detail, mtype='error')
     except UnicodeDecodeError as detail:
-        pp('UnicodeDecodeError: %s' % detail, 'error')
+        pp('UnicodeDecodeError: %s' % detail, mtype='error')
 
 
 def save_obj(obj, name):

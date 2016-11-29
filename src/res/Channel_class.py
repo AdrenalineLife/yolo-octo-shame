@@ -35,6 +35,9 @@ class Channel(object):
         # время начала стрима
         self.created_at = ''
 
+        # время начала стрима с перерывами
+        self.created_at_withbreak = ''
+
         self.video_height = 0
         self.fps = 0
         self.delay = 0
@@ -52,6 +55,8 @@ class Channel(object):
             self.status = chan_info['channel']['status']
             if self.viewers > self.max_viewers:
                 self.max_viewers = self.viewers
+            if not self.created_at_withbreak:
+                self.created_at_withbreak = self.created_at
 
     def shorten_game(self):
         return shorten_games.shorten.get(self.curr_game, self.curr_game)
@@ -69,7 +74,7 @@ class Channel(object):
         return time.time() - self.time_ > self.break_time
 
     @staticmethod
-    def to_str_w_time(x):  # for games_to_str with time
+    def to_str_w_time(x):  # for "games_to_str" with time
         m, s = divmod(int(x['ended'] - x['started']), 60)
         h, m = divmod(m, 60)
         return '{} [{} h {} m]'.format(x['game'], h, m) if h else '{} [{} m]'.format(x['game'], m)
@@ -83,6 +88,13 @@ class Channel(object):
                 return ' → '.join(self.to_str_w_time(x) for x in self.games)
         else:
             return 'Игр не было'
+
+    def clear_games_list(self):
+        self.games[:] = []
+
+    # delete a game by index from list of games
+    def del_game(self, index):
+        del self.games[index]
 
     def __repr__(self):
         return json.dumps(self.__dict__, indent=4)

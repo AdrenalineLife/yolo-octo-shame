@@ -63,7 +63,7 @@ class Roboraj(object):
             self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
         except Exception:
             self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
-            pp("Could not load channel file", 'error')
+            pp("Could not load channel file", mtype='ERROR')
         else:
             # deleting unnacessery channels
             self.ch_list[:] = [x for x in self.ch_list if '#' + x.name in self.config['channels']]
@@ -90,12 +90,12 @@ class Roboraj(object):
                     setattr(self.__class__, command, getattr(module, command[1:]))
                 except ImportError:
                     missing_func.append(command)
-                    pp('No module found: ' + command, 'warning')
+                    pp('No module found: ' + command, mtype='WARNING')
                 except AttributeError:
                     missing_func.append(command)
-                    pp('No function found: ' + command, 'warning')
+                    pp('No function found: ' + command, mtype='WARNING')
             if 'return' not in self.cmd_headers[command] or not self.cmd_headers[command]['return']:
-                pp("'" + command + "' command does not have 'return'", 'WARNING')
+                pp("'" + command + "' command does not have 'return'", mtype='WARNING')
                 missing_func.append(command)
 
         # deleting commands from dict which we did not find
@@ -153,10 +153,11 @@ class Roboraj(object):
                     if ch.started:
                         ch.games[-1]['ended'] = time.time()
                         ch.time_ = time.time()
-                        ch.max_viewers = 0
                         ch.started = False
                     if ch.expired():
                         ch.games = []
+                        ch.max_viewers = 0
+                        ch.created_at_withbreak = ''
             save_obj(self.ch_list, 'channel_list')
             time.sleep(9.0)
 
@@ -171,24 +172,27 @@ class Roboraj(object):
         cnt = 1
         while cnt <= retries:
             try:
-                r = requests.get('https://api.twitch.tv/kraken', headers=self.req_headers, timeout=4)
+                r = requests.get('https://api.twitch.tv/kraken/', headers=self.req_headers, timeout=4)
+                if r.status_code == 400:
+                    pp('Your Client-ID is not identified, your API calls will fail', mtype='ERROR')
+                    return False
                 if r.status_code != 200:
-                    pp("Client-ID wasn't checked, trying again", 'WARNING')
+                    pp("Client-ID wasn't checked, trying again", mtype='WARNING')
                     cnt += 1
                     continue
                 if r.json()['identified']:
                     pp('Your Client-ID is ok, you can use API calls')
                     return True
                 else:
-                    pp('Your Client-ID is not identified, your API calls will fail', 'ERROR')
+                    pp('Your Client-ID is not identified, your API calls will fail', mtype='ERROR')
                     return False
             except KeyError:
-                pp("There is no 'identified' key, Client-ID wasn't checked, trying again", 'WARNING')
+                pp("There is no 'identified' key, Client-ID wasn't checked, trying again", mtype='WARNING')
                 cnt += 1
             except (requests.RequestException, ValueError):
-                pp("Client-ID wasn't checked, trying again", 'WARNING')
+                pp("Client-ID wasn't checked, trying again", mtype='WARNING')
                 cnt += 1
-        pp("Unable to check Client-ID in {} retries".format(retries), 'WARNING')
+        pp("Unable to check Client-ID in {} retries".format(retries), mtype='WARNING')
         return False
 
     def check_for_sub(self, msg):

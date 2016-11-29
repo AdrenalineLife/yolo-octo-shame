@@ -11,7 +11,7 @@ def uptime(self, args, msg):
         chan = next(x for x in self.ch_list if x.name == msg.chan[1:])
         if not chan.is_online:
             return ''
-        diff = datetime.datetime.utcnow() - datetime.datetime.strptime(chan.created_at, '%Y-%m-%dT%H:%M:%SZ')
+        diff = datetime.datetime.utcnow() - datetime.datetime.strptime(chan.created_at_withbreak, '%Y-%m-%dT%H:%M:%SZ')
     except (StopIteration, ValueError):
         return ''
 
