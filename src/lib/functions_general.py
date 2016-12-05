@@ -21,8 +21,6 @@ def pp(message, mtype='INFO'):
             mtype = red.format(mtype)
         elif mtype == 'WARNING':
             mtype = yel.format(mtype)
-        elif mtype == 'FUNCTION':
-            mtype = cya.format(mtype)
 
     print('[{}] [{}] {}'.format(time.strftime('%H:%M:%S', time.localtime()), mtype, message))
 

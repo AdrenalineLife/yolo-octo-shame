@@ -11,10 +11,11 @@ import requests
 import json
 
 import src.lib.irc as irc_
-import src.lib.command_headers as headers
+import src.lib.command_headers as c_headers
 from src.lib.functions_general import *
 from src.res.Message_class import Message
 from src.res.Channel_class import Channel
+from src.res.CommandHandler_class import CommandHandler
 
 
 class Roboraj(object):
@@ -29,8 +30,8 @@ class Roboraj(object):
         # list of channels
         self.ch_list = list()
 
-        # info about commands (dict)
-        self.cmd_headers = headers.commands
+        # info about commands
+        self.cmd_headers = CommandHandler(c_headers.commands)
 
         # headers for all API requests
         self.req_headers = {'Client-ID': self.config['Client-ID'],
@@ -78,9 +79,10 @@ class Roboraj(object):
     def load_command_funcs(self):
         for channel in self.config['channels']:
             for command in self.cmd_headers:
-                self.cmd_headers[command]['time'] = 0
+                self.cmd_headers[command]['time'] = 0.0
                 self.cmd_headers[command][channel] = {}
-                self.cmd_headers[command][channel]['last_used'] = 0
+                self.cmd_headers[command][channel]['last_used'] = 0.0
+                self.cmd_headers[command][channel]['last_used_name'] = ''
 
         missing_func = []
         for command in self.cmd_headers:
@@ -104,22 +106,6 @@ class Roboraj(object):
 
     def call_func(self, command, args, msg):
         return getattr(self, command)(args, msg)
-
-    def is_valid_command(self, command):
-        return command in self.cmd_headers
-
-    def has_correct_args(self, message, command):
-        qty = len(message.split(' ')) - 1
-        return self.cmd_headers[command]['argc_min'] <= qty <= self.cmd_headers[command]['argc_max']
-
-    def is_on_cooldown(self, command, channel):
-        return time.time() - self.cmd_headers[command][channel]['last_used'] < self.cmd_headers[command]['limit']
-
-    def get_cooldown_remaining(self, command, channel):
-        return round(self.cmd_headers[command]['limit'] - (time.time() - self.cmd_headers[command][channel]['last_used']))
-
-    def update_last_used(self, command, channel):
-        self.cmd_headers[command][channel]['last_used'] = time.time()
 
     def check_channel_state(self):
         while True:
@@ -275,17 +261,17 @@ class Roboraj(object):
 
                     self.call_func('!ragnaros', ['add'], msg)
 
-                    if self.is_valid_command(msg.message.split(' ')[0]):
+                    if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
                         command = msg.message
                         command_name = command.split(' ')[0]
 
-                        if self.cmd_headers[command_name]['return'] == 'command':
-                            if self.has_correct_args(command, command_name):
+                        if self.cmd_headers.returns_command(command_name):
+                            if self.cmd_headers.has_correct_args(command, command_name):
                                 args = command.split(' ')
                                 del args[0]
 
-                                if self.is_on_cooldown(command_name, msg.chan):
-                                    sec_remaining = self.get_cooldown_remaining(command_name, msg.chan)
+                                if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
+                                    sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
                                     self.send_to_chat(say_cd.format(sec_remaining), msg.disp_name, msg.chan)
                                     pbot(pbot_on_cd.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                                 else:
@@ -299,17 +285,17 @@ class Roboraj(object):
                                                 self.send_to_chat(r, msg.disp_name, msg.chan)
                                         else:
                                             self.send_to_chat(result, msg.disp_name, msg.chan)
-                                        self.update_last_used(command_name, msg.chan)
+                                        self.cmd_headers.update_last_used(command_name, msg.chan, msg.name)
                             else:
                                 pp("Invalid number of arguments for '{}'".format(command_name))
 
                         else:
-                            if self.is_on_cooldown(command_name, msg.chan):
-                                sec_remaining = self.get_cooldown_remaining(command_name, msg.chan)
+                            if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
+                                sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
                                 self.send_to_chat(say_cd.format(sec_remaining), msg.disp_name, msg.chan)
                                 pbot(pbot_on_cd.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                             else:
                                 pbot(pbot_not_on_cd.format(command_name, msg.disp_name), msg.chan)
-                                resp = self.cmd_headers[command_name]['return']
-                                self.update_last_used(command_name, msg.chan)
+                                resp = self.cmd_headers.get_return(command_name)
+                                self.cmd_headers.update_last_used(command_name, msg.chan, msg.name)
                                 self.send_to_chat(resp, msg.disp_name, msg.chan)
