@@ -77,30 +77,45 @@ class Roboraj(object):
             del loaded_ch
 
     def load_command_funcs(self):
-        for channel in self.config['channels']:
-            for command in self.cmd_headers:
-                self.cmd_headers[command]['time'] = 0.0
-                self.cmd_headers[command][channel] = {}
-                self.cmd_headers[command][channel]['last_used'] = 0.0
-                self.cmd_headers[command][channel]['last_used_name'] = ''
-
         missing_func = []
-        for command in self.cmd_headers:
-            if self.cmd_headers[command]['return'] == 'command':
-                try:
-                    module = importlib.import_module('src.lib.commands.' + command[1:])
-                    setattr(self.__class__, command, getattr(module, command[1:]))
-                except ImportError:
-                    missing_func.append(command)
-                    pp('No module found: ' + command, mtype='WARNING')
-                except AttributeError:
-                    missing_func.append(command)
-                    pp('No function found: ' + command, mtype='WARNING')
-            if 'return' not in self.cmd_headers[command] or not self.cmd_headers[command]['return']:
-                pp("'" + command + "' command does not have 'return'", mtype='WARNING')
-                missing_func.append(command)
+        for cmd_name, command in self.cmd_headers.items():
+            if 'ref' not in command:
+                if command['return'] == 'command':
+                    try:
+                        module = importlib.import_module('src.lib.commands.' + cmd_name[1:])
+                        setattr(self.__class__, cmd_name, getattr(module, cmd_name[1:]))
+                    except ImportError:
+                        missing_func.append(cmd_name)
+                        pp('No module found: ' + cmd_name, mtype='WARNING')
+                    except AttributeError:
+                        missing_func.append(cmd_name)
+                        pp('No function found: ' + cmd_name, mtype='WARNING')
+                if 'return' not in command or not command['return']:
+                    pp("'" + cmd_name + "' command does not have 'return'", mtype='WARNING')
+                    missing_func.append(cmd_name)
 
         # deleting commands from dict which we did not find
+        for f in missing_func:
+            self.cmd_headers.pop(f, None)
+
+        for cmd_name in self.cmd_headers:
+            if 'ref' not in self.cmd_headers[cmd_name]:
+                for channel in self.config['channels']:
+                    self.cmd_headers[cmd_name]['time'] = 0.0
+                    self.cmd_headers[cmd_name]['name'] = cmd_name
+                    self.cmd_headers[cmd_name][channel] = {}
+                    self.cmd_headers[cmd_name][channel]['last_used'] = 0.0
+                    self.cmd_headers[cmd_name][channel]['last_used_name'] = ''
+
+        missing_func[:] = []
+        for cmd_name, command in self.cmd_headers.items():
+            if 'ref' in command:
+                if command['ref'] in self.cmd_headers:
+                    print('YES')
+                    self.cmd_headers[cmd_name] = self.cmd_headers[command['ref']]
+                else:
+                    pp("Unresolved reference: {}".format(command['ref']), mtype='WARNING')
+                    missing_func.append(cmd_name)
         for f in missing_func:
             self.cmd_headers.pop(f, None)
 
@@ -263,7 +278,7 @@ class Roboraj(object):
 
                     if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
                         command = msg.message
-                        command_name = command.split(' ')[0]
+                        command_name = self.cmd_headers.get_real_name(command.split(' ')[0])
 
                         if self.cmd_headers.returns_command(command_name):
                             if self.cmd_headers.has_correct_args(command, command_name):

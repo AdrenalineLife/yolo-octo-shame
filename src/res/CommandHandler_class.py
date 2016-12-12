@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 __author__ = 'Life'
 
 import time
+import json
 
 
 class CommandHandler(dict):
@@ -27,8 +29,17 @@ class CommandHandler(dict):
     def returns_command(self, name):
         return self[name]['return'] == 'command'
 
-    def get_return(self, name):
-        return self[name]['return']
+    def get_return(self, command):
+        return self[command]['return']
+
+    def get_real_name(self, command):
+        return self[command]['name']
+
+    def is_reference(self, command):
+        return self.get_real_name(command) != command
+
+    def __repr__(self):
+        return json.dumps(self.__dict__, indent=4)
 
 if __name__ == '__main__':
     d = {'1':2, '2':3, '3':4}
