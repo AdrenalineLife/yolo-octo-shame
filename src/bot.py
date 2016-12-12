@@ -111,7 +111,6 @@ class Roboraj(object):
         for cmd_name, command in self.cmd_headers.items():
             if 'ref' in command:
                 if command['ref'] in self.cmd_headers:
-                    print('YES')
                     self.cmd_headers[cmd_name] = self.cmd_headers[command['ref']]
                 else:
                     pp("Unresolved reference: {}".format(command['ref']), mtype='WARNING')
