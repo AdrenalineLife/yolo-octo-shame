@@ -2,34 +2,28 @@
 __author__ = 'Life'
 
 
-greetings = {
-    '#c_a_k_e': {
-        'new': 'Приветствуем новобранца {n}!',
-        'resub': 'Спасибо за подписку, {n}! {m} месяцев {e}',
-        'emote': 'Kappa'
-    },
-    '#nastjanastja': {
-        'new': 'Thank you, {n}!',
-        'resub': 'Thanks {n} for {m} month! {e}',
-        'emote': 'Keepo'
-    },
-    '#': {
-        'new': '',
-        'resub': ''
-    }
-}
+from src.res.sub_greetings_phrases import greetings
+from src.lib.functions_general import pp
+
+for x in greetings:
+    if 'emote' not in greetings[x]:
+        greetings[x]['emote'] = ''
+
 
 def sub_greetings(self, args, msg):
-    global greetings
-    chan, name, month = args
+    chan, name, month, is_prime = args
     try:
-        resp = greetings[chan]['resub'] if month else greetings[chan]['new']
+        if not is_prime:
+            resp = greetings[chan]['resub'] if month else greetings[chan]['new']
+        else:
+            resp = greetings[chan]['resub_p'] if month else greetings[chan]['new_p']
         emote = greetings[chan]['emote'].strip() + ' '
-        str_kwargs = {
+        resp_kwargs = {
             'm': month,
-            'n': name,
-            'e': (emote * month).rstrip()
+            'name': name,
+            'e': emote * month
         }
-    except KeyError:
+    except KeyError as e:
+        pp('No key found: {} (sub_greetings.py)'.format(e), mtype='ERROR')
         return ''
-    return resp.format(**str_kwargs)
+    return resp.format(**resp_kwargs)

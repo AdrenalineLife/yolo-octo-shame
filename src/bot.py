@@ -23,9 +23,9 @@ class Roboraj(object):
         self.config = config
         self.irc = irc_.Irc(config)
         self.msg_pat = re.compile(r'@badges=(.*?);color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
-        self.resub_pat = re.compile(r'^@badges=.*emotes=.*;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*')
-        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify[.]tmi[.]twitch[.]tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed!')
-        self.is_msg_pat = re.compile(r'.*;color=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
+        self.resub_pat = re.compile(r'^@badges=.*?;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s(just\\ssubscribed\\swith\\sTwitch\\sPrime)?.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
+        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify\.tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed( with Twitch Prime)?!')
+        self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
 
         # list of channels
         self.ch_list = list()
@@ -198,11 +198,12 @@ class Roboraj(object):
     def check_for_sub(self, msg):
         res = self.resub_pat.search(msg) or self.sub_pat.search(msg)
         if res:
-            res = res.groups()
+            res = list(res.groups())
         else:
             return tuple()
+        res[2] = bool(res[2])  # this is either None -> False or string -> True
         # in case of new sub, month = 0
-        return (res[0], res[1].replace('\s', ''), 0) if len(res) == 2 else (res[2], res[1], int(res[0]))
+        return (res[0], res[1].replace('\s', ''), 0, res[2]) if len(res) == 3 else (res[3], res[1], int(res[0]), res[2])
 
     def sub_greetings(self, sub_info):
         if not sub_info:
@@ -234,7 +235,7 @@ class Roboraj(object):
         pbot_not_on_cd = 'Command is valid and not on cooldown. ({}) ({})'
 
         while True:
-            time.sleep(0.003)
+            #time.sleep(0.003)
             try:
                 data = self.irc.recv(self.config['socket_buffer_size']).decode().rstrip()
             except Exception:
