@@ -22,7 +22,7 @@ class Roboraj(object):
     def __init__(self, config):
         self.config = config
         self.irc = irc_.Irc(config)
-        self.msg_pat = re.compile(r'@badges=(.*?);color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
+        #self.msg_pat = re.compile(r'@badges=(.*?);color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
         self.resub_pat = re.compile(r'^@badges=.*?;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s(just\\ssubscribed\\swith\\sTwitch\\sPrime)?.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
         self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify\.tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed( with Twitch Prime)?!')
         self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
@@ -49,13 +49,15 @@ class Roboraj(object):
         return bool(self.is_msg_pat.match(data))
 
     def parse_message(self, msg):
-        try:
-            r = self.msg_pat.findall(msg)[0]
-        except IndexError:
-            print('>'*10, '\n', msg)
-            return '*ERROR*', '', '', '#', '', '0', '0', '0', ''
-        # order: name, disp_name, msg, chan, color, is_sub, is_mod, is_turbo, id, emote_info, badge_info
-        return r[8], r[2], r[10], r[9], r[1], r[6], r[5], r[7], r[4], r[3], r[0]
+        first, sec = msg.split(' PRIVMSG ', maxsplit=1)
+        tags, name = first.split(' :')
+        name = name.split('!')[0]
+        chan, message = sec.split(' :', maxsplit=1)
+        # tags = {x.split('=')[0].replace('-','_'): x.split('=')[1] for x in tags.lstrip('@').split(';')}
+        itr = (x.split('=') for x in tags.lstrip('@').split(';'))
+        tags = {key.replace('-', '_'): value for key, value in itr}
+        tags.update(name=name, chan=chan, msg=message)
+        return tags
 
     def load_or_create_channel_list(self):
         try:
@@ -265,7 +267,7 @@ class Roboraj(object):
                 self.sub_greetings(self.check_for_sub(data_line))
 
                 if self.check_for_message(data_line):
-                    msg = Message(*self.parse_message(data_line))
+                    msg = Message(**self.parse_message(data_line))
 
                     ##### RANDOM CUSTOM STUFF
 
