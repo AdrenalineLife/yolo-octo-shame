@@ -34,9 +34,10 @@ class Message(object):
         self.message = msg
         self.chan = chan  # chan name starts with '#'
         self.color = kwargs.get('color', '')
-        self.is_mod = kwargs.get('is_mod', '0') == '1' or self.name == self.chan[1:]
-        self.is_sub = kwargs.get('is_sub', '0') == '1'
-        self.is_turbo = kwargs.get('is_turbo', '0') == '1'
+        self.is_mod = kwargs.get('mod', '0') == '1' or self.name == self.chan[1:]
+        self.is_sub = kwargs.get('subscriber', '0') == '1'
+        self.is_turbo = kwargs.get('turbo', '0') == '1'
+        self.user_type = kwargs.get('user_type', '')
         self.msg_id = kwargs.get('id', '')
         self.user_id = kwargs.get('user_id', '')
         self.chan_id = kwargs.get('room_id', '')
