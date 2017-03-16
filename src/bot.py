@@ -9,6 +9,7 @@ import importlib
 import threading
 import requests
 import json
+from collections import deque
 
 import src.lib.irc as irc_
 import src.lib.command_headers as c_headers
@@ -32,6 +33,9 @@ class Roboraj(object):
 
         # info about commands
         self.cmd_headers = CommandHandler(c_headers.commands)
+
+        # pass
+        self.chat_messages = {chan: deque(maxlen=300) for chan in self.config['channels']}
 
         # headers for all API requests
         self.req_headers = {'Client-ID': self.config['Client-ID'],
@@ -276,6 +280,7 @@ class Roboraj(object):
                     if not self.config['debug']:
                         ppi(msg.chan, msg.message, msg.disp_name)
 
+                    self.chat_messages[msg.chan].appendleft(msg)
                     self.call_func('!ragnaros', ['add'], msg)
 
                     if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
