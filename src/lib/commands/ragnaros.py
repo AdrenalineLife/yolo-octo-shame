@@ -4,36 +4,51 @@ __author__ = 'Life'
 import time
 import random
 import json
+import pickle
+
+import src.config.config as cfg
+
 from src.lib.functions_general import save_obj, load_obj, pp
+
+'''This is a command to imitate ragnaros from Hearthstone.
+Its purpose is to timeout a random person every 'hit_freq' secs when it is turned on.
+It can also be explicitly called for a single hit.'''
 
 
 class Ragnaros(object):
-    def __init__(self, name, color='Red', hit_freq=90.0, get_in_trap_time=30.0, ban_time=40):
+    def __init__(self, name, color='Red', hit_freq=90.0, get_in_trap_time=35.0, ban_time=40):
         self.name = name.lower()
         self.color = color  # color for using /me
-        self.hit_freq = hit_freq  # ban every hit_freq seconds
+        self.hit_freq = hit_freq  # ban every 'hit_freq' seconds
         self.get_in_trap_time = get_in_trap_time
         self.ban_time = ban_time
         self.turned_on = False
         self.last_time_hit = 0.0
-        self.victims = dict()
 
-    def make_hit(self, t=None):
-        if t is None:
-            t = self.ban_time
-        if self.victims:
-            vic = random.choice(list(self.victims.keys()))
-            return [
-                '/timeout {0} {1}'.format(vic, t),
-                'Рагнарос попал в тебя, {0}!'.format(vic)
-            ]
+    def choose_victim(self, iterable):
+        t_ = time.time()
+        sample = {x.disp_name for x in iterable
+                  if t_ - x.created_ts < self.get_in_trap_time and not x.is_mod}
+        if sample:
+            return random.choice(list(sample))
         else:
             return ''
 
-    def remove_users(self):
-        remove = [x for x in self.victims if time.time() - self.victims[x] >= self.get_in_trap_time]
-        for x in remove:
-            self.victims.pop(x, None)
+    def make_hit(self, messages, ban_time=None):
+        if messages is not None:
+            victim = self.choose_victim(messages)
+        else:
+            return ''
+        if ban_time is None:
+            ban_time = self.ban_time
+        self.last_time_hit = time.time()
+        return [
+            '/timeout {0} {1}'.format(victim, ban_time),
+            say_hit_you.format(disp_name=victim, ban=ban_time)
+        ]
+
+    def is_time_to_hit(self):
+        return time.time() - self.last_time_hit >= self.hit_freq
 
     def turn_on_off(self, s):
         self.turned_on = True if s == 'on' else False
@@ -42,62 +57,56 @@ class Ragnaros(object):
         return json.dumps(self.__dict__, indent=0)
 
 
-allowed = ('c_a_k_e', 'a_o_w', 'nastjanastja', 'adrenaline_life')
+say_is_on = '/me > Рагнарос выходит на стол!'
+say_is_off = '/me > Рагнарос покидает доску!'
+say_hit_you = 'Рагнарос попал в тебя, {disp_name}!'
 
-say = ('/me > Рагнарос выходит на стол!', '/me > Рагнарос покидает доску!')
-
-required_ch = (
-    '#a_o_w',
-)
+required_ch = cfg.config['channels']
 
 try:
     ragn_list = load_obj('ragnaros')
 except FileNotFoundError:
     ragn_list = [Ragnaros(x) for x in required_ch]
-except Exception:
+except (pickle.PickleError, AttributeError, IndexError, EOFError):
     ragn_list = [Ragnaros(x) for x in required_ch]
     pp("Could not load ragnaros file", 'error')
 else:
     loaded_ragn = [x.name for x in ragn_list]
     for x in required_ch:
-        if x not in loaded_ragn:
-            ragn_list.append(Ragnaros(x))
+        if x not in loaded_ragn:  # if required chan is not in the loaded list
+            ragn_list.append(Ragnaros(x))  # then append it
     del loaded_ragn
     for x in ragn_list:
-        x.victims = dict()
         x.last_time_hit = time.time()
 
 
 def ragnaros(self, args, msg):
-    ragn = [x for x in ragn_list if x.name == msg.chan]
+    ragn = next((x for x in ragn_list if x.name == msg.chan), False)
     if not ragn:
         return ''
-    else:
-        ragn = ragn[0]
+
+    messages = self.chat_messages.get(msg.chan, None)
+    if messages is None:
+        pp('Channel {} was not found in chat messages (ragnaros.py)'.format(msg.chan), mtype='WARNING')
+
     if args:
         if args[0] == 'check':
-            ragn.remove_users()
-            if ragn.turned_on and time.time() - ragn.last_time_hit >= ragn.hit_freq:
-                ragn.last_time_hit = time.time()
-                return ragn.make_hit()
+            if ragn.turned_on and ragn.is_time_to_hit():
+                return ragn.make_hit(messages)
             return ''
 
-        if args[0] == 'add':
-            if not msg.is_mod:
-                ragn.victims[msg.name] = time.time()
-            return ''
-
-        if args[0] in ('on', 'off') and msg.name in allowed:
+        if args[0] in ('on', 'off') and msg.is_mod:
             ragn.turn_on_off(args[0])
             ragn.last_time_hit = time.time()
             save_obj(ragn_list, 'ragnaros')
             return [
-                '/color {0}'.format(ragn.color),
-                say[0] if ragn.turned_on else say[1],
-                '/color Blue'
+                '/color ' + ragn.color,
+                say_is_on if ragn.turned_on else say_is_off,
+                '/color ' + self.config['color']
             ]
 
-        if len(args) == 2 and msg.name in allowed:
+        # setting some options
+        if len(args) == 2 and msg.is_mod:
             if args[0] in ('cd', 'bantime'):
                 try:
                     sec = int(args[1])
@@ -118,10 +127,11 @@ def ragnaros(self, args, msg):
             return ''
         if sec < 5:
             sec = 5
-        if msg.name in allowed:
-            return ragn.make_hit(sec)
+        if msg.is_mod:
+            return ragn.make_hit(messages, ban_time=sec)
 
-    if msg.name in allowed:
-        return ragn.make_hit()
+    # explicit call without arguments
+    if msg.is_mod:
+        return ragn.make_hit(messages)
     else:
         return ''

@@ -281,7 +281,6 @@ class Roboraj(object):
                         ppi(msg.chan, msg.message, msg.disp_name)
 
                     self.chat_messages[msg.chan].appendleft(msg)
-                    self.call_func('!ragnaros', ['add'], msg)
 
                     if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
                         command = msg.message
