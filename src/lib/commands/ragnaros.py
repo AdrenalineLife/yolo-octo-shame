@@ -39,6 +39,8 @@ class Ragnaros(object):
             victim = self.choose_victim(messages)
         else:
             return ''
+        if not victim:
+            return ''
         if ban_time is None:
             ban_time = self.ban_time
         self.last_time_hit = time.time()
@@ -129,6 +131,7 @@ def ragnaros(self, args, msg):
             sec = 5
         if msg.is_mod:
             return ragn.make_hit(messages, ban_time=sec)
+        return ''
 
     # explicit call without arguments
     if msg.is_mod:
