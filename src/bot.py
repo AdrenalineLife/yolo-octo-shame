@@ -24,8 +24,8 @@ class Roboraj(object):
         self.config = config
         self.irc = irc_.Irc(config)
         #self.msg_pat = re.compile(r'@badges=(.*?);color=(.*);display-name=(.*?);emotes=(.*?);id=([a-zA-Z0-9-]*);mod=([01]);room-id=.*?subscriber=([01]);.*?turbo=([01]);user-id=.* :([a-zA-Z0-9_\\]*)!.*@.*tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_\\]+) :(.*)')
-        self.resub_pat = re.compile(r'^@badges=.*?;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s(just\\ssubscribed\\swith\\sTwitch\\sPrime)?.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
-        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify\.tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed( with Twitch Prime)?!')
+        self.resub_pat = re.compile(r'^@badges=.*?;msg-id=resub;msg-param-months=([0-9]+);.+system-msg=(.+?)\\s.*?with\\s(Twitch\\sPrime)?.+ :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
+        self.sub_pat = re.compile(r':twitchnotify!twitchnotify@twitchnotify\.tmi\.twitch\.tv PRIVMSG (#[a-zA-Z0-9_]+) :(.+?) just subscribed with (Twitch Prime)?!')
         self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
 
         # list of channels
@@ -207,7 +207,7 @@ class Roboraj(object):
             res = list(res.groups())
         else:
             return tuple()
-        res[2] = bool(res[2])  # this is either None -> False or string -> True
+        res[2] = res[2] == 'Twitch Prime'  # this is either "Twitch Prime" or "a #<amount> sub"
         # in case of new sub, month = 0
         return (res[0], res[1].replace('\s', ''), 0, res[2]) if len(res) == 3 else (res[3], res[1], int(res[0]), res[2])
 
