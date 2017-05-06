@@ -58,34 +58,35 @@ class Channel(object):
             if not self.created_at_withbreak:
                 self.created_at_withbreak = self.created_at
 
-    def shorten_game(self):
-        return shorten_games.shorten.get(self.curr_game, self.curr_game)
+    def shorten_game(self, game):
+        return shorten_games.shorten.get(game, game)
 
     def add_game(self):
-        game_name = self.shorten_game()
         if self.games:
-            if self.games[-1]['game'] != game_name:
+            if self.games[-1]['game'] != self.curr_game:
                 self.games[-1]['ended'] = time.time()
-                self.games.append({'game': game_name, 'started': time.time()})
+                self.games.append({'game': self.curr_game, 'started': time.time()})
         else:
-            self.games.append({'game': game_name, 'started': time.time()})
+            self.games.append({'game': self.curr_game, 'started': time.time()})
 
     def expired(self):
         return time.time() - self.time_ > self.break_time
 
-    @staticmethod
-    def to_str_w_time(x):  # for "games_to_str" with time
+    def to_str_w_time(self, x):  # for "games_to_str" with time
         m, s = divmod(int(x['ended'] - x['started']), 60)
         h, m = divmod(m, 60)
-        return '{} [{} h {} m]'.format(x['game'], h, m) if h else '{} [{} m]'.format(x['game'], m)
+        if h:
+            return '{} [{} h {} m]'.format(self.shorten_game(x['game']), h, m)
+        else:
+            return '{} [{} m]'.format(self.shorten_game(x['game']), m)
 
-    def games_to_str(self, need_time=False):
+    def games_to_str(self, need_time=False, separator=' → '):
         if self.games:
             self.games[-1]['ended'] = time.time()
             if not need_time:
-                return ' → '.join(x['game'] for x in self.games)
+                return separator.join(self.shorten_game(x['game']) for x in self.games)
             else:
-                return ' → '.join(self.to_str_w_time(x) for x in self.games)
+                return separator.join(self.to_str_w_time(x) for x in self.games)
         else:
             return 'Игр не было'
 
