@@ -207,6 +207,8 @@ class Roboraj(object):
             res = list(res.groups())
         else:
             return tuple()
+        if res[2] is None:
+            res[2] = ''
         res[2] = res[2].replace(r'\\s', ' ') == 'Twitch Prime'  # this is either "Twitch Prime" or "a #<amount> sub"
         # in case of new sub, month = 0
         return (res[0], res[1].replace('\s', ''), 0, res[2]) if len(res) == 3 else (res[3], res[1], int(res[0]), res[2])
