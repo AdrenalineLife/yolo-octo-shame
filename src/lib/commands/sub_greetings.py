@@ -11,13 +11,18 @@ for x in greetings:
 
 
 def sub_greetings(self, args, msg):
-    chan, name, month, is_prime = args
+    chan, name, month, plan = args
+    is_prime = plan.lower() == 'prime'
+    chan_greets = greetings.get(chan, None)
+    if chan_greets is None:  # TODO notify as an option
+        return ''
+
     try:
         if not is_prime:
-            resp = greetings[chan]['resub'] if month else greetings[chan]['new']
+            resp = chan_greets['resub'] if month else chan_greets['new']
         else:
-            resp = greetings[chan]['resub_p'] if month else greetings[chan]['new_p']
-        emote = greetings[chan]['emote'].strip() + ' '
+            resp = chan_greets['resub_p'] if month else chan_greets['new_p']
+        emote = chan_greets['emote'].strip() + ' '
         resp_kwargs = {
             'm': month,
             'name': name,
