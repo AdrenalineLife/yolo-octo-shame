@@ -75,15 +75,15 @@ passw = auth_plug_pass
 
 not_logged = True
 
-
+curr_room = ''
 plug_rooms = {
-    '#1': '',
+    '#1': 'party-cake',
     '#2': 'i-the-80-s-and-90-s-1'
 }
 
 
 def plugsong(self, args, msg):
-    global not_logged, plug_rooms
+    global not_logged, plug_rooms, curr_room
 
     try:
         if not_logged:
@@ -92,10 +92,13 @@ def plugsong(self, args, msg):
                 return 'Ошибка подключения к PlugDJ'
             else:
                 not_logged = False
-        if msg.chan not in plug_rooms:  # if plugdj room for this twitch chan is not provided
+
+        room_name = plug_rooms.get(msg.chan, None)
+        if room_name is None:  # if plugdj room for this twitch chan is not provided
             return ''
-        else:
-            join_room(plug_rooms[msg.chan])  # we should join a room before getting its state
+        if curr_room != room_name:
+            join_room(room_name)  # we should join a room before getting its state
+            curr_room = room_name
         state = room_state()
 
     except PlugLoginError:
@@ -119,12 +122,12 @@ def plugsong(self, args, msg):
     playback = state['playback']  # info about current song
     if playback:  # determining the form of the response
         if args and args[0] == 'room':
-            resp = '{author} — {title} [{dur}]. DJ: {dj}. Людей: {ppl}. Очередь: {queue} ({url})'
+            resp = '{author} — {title} [{dur}]. DJ: {dj}. Людей: {ppl}. Очередь: {queue}. {url}'
         else:
             resp = 'Сейчас играет на {url}: {author} — {title} [{dur}]. DJ: {dj}'
     else:
         if args and args[0] == 'room':
-            resp = 'Людей: {ppl}. Очередь: {queue} ({url})'
+            resp = 'Людей: {ppl}. Очередь: {queue}. {url}'
         else:
             return 'В данный момент музыка на PlugDJ не играет'
 
@@ -157,5 +160,8 @@ if __name__ == '__main__':  # little bit of testing
         pass
     msg_ = MSG()
     msg_.chan = '#2'
+
     print(plugsong(None, [], msg_))
+    #print(plugsong(None, [], msg_)); time.sleep(2)
+    #print(plugsong(None, [], msg_))
     print(plugsong(None, ['room'], msg_))
