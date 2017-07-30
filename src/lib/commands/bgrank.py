@@ -2,12 +2,20 @@
 __author__ = 'Life'
 
 import requests
-import re
+import json
+import time
+
+#from bs4 import BeautifulSoup
 
 from src.lib.functions_general import pp
 
-bg_nick = {
+bg_nick = {  # PUBG nickname
     '#c_a_k_e': 'CakeDestroyer',
+    '#': ''
+}
+
+default_type = {  # keys are lowcase
+    '#c_a_k_e': 'eu',
     '#': ''
 }
 
@@ -20,18 +28,11 @@ type_full = {  # value is lowercase
     'duo': 'duo'
 }
 
-USAGE = '/w (sender) !bgrank s | d | sq'
-LINK = 'https://pubg.me/{}'
-STATS = ('rating', 'rounds', 'wins', 'kills', 'top10', 'rank')
-REGEX = (
-    r'<div.*? id="overview-eu".*?<div class="stat-h"><div>{} rating</div><div>([0-9]+)</div></div>',
-    r'<div.*? id="overview-eu".*?<div class="stat-e"><div>{} rounds played</div><div>([0-9]+)</div></div>',
-    r'<div.*? id="overview-eu".*?<div class="stat-h stat-md"><div>{} wins</div><div>([0-9]+)</div></div>',
-    r'<div.*? id="overview-eu".*?<div class="stat-h stat-md"><div>{} kills</div><div>([0-9]+)</div></div>',
-    r'''<div.*? id="overview-eu".*?<div class="stat-h stat-md"><div>{} top 10's</div><div>([0-9]+)</div></div>''',
-    r'<div.*? id="overview-eu".*?<div class="stat-e"><div>{} rank in eu</div><div class="stat-r">(#[0-9]+)</div></div>'
-)
-RESP = 'PUBG {type}: Rank {rank}, Rounds {rounds}, Wins {wins}, Kills {kills}, Top 10: {top10}'
+USAGE = '/w (sender) !bgrank <type> [<region>]'
+LINK = 'https://pubgtracker.com/api/profile/pc/{}'
+API_KEY = '97d234e8-3d38-41ab-ba53-b5ef39ac7a95'
+SEASON = '2017-pre2'
+RESP = 'PUBG {type} {region}: Rank {Rank}, Rating {Rating}, Rounds {RoundsPlayed}, Wins {Wins}, Kills {Kills}, Top 10: {Top10s}'
 
 
 def bgrank(self, args, msg):
@@ -39,26 +40,52 @@ def bgrank(self, args, msg):
     if nick is None:
         return ''
 
+    reg = default_type.get(msg.chan, 'na')  # region
     if args:
         if args[0].lower() in ('s', 'd', 'sq', 'solo', 'duo', 'squad'):
-            game_type = args[0].lower()
+            type_ = args[0].lower()
         else:
             return USAGE
+
+        if len(args) >= 2 and args[1].lower() in ('na', 'eu', 'as', 'sa', 'sea'):
+            reg = args[1]
     else:
-        game_type = 's'
-    game_type_full = type_full[game_type]
+        type_ = 's'
+    type_ = type_full.get(type_, type_)
 
     try:
-        page = requests.get(LINK.format(nick)).text
-        stats = {stat: re.search(r, page).group(1) for stat, r in
-                 zip(STATS, (x.format(game_type_full) for x in REGEX))}
-        return RESP.format(type=game_type_full.capitalize(), **stats)
-    except (requests.RequestException, AttributeError) as e:
-        pp('bgrank: ' + str(e))
+        response = requests.get(LINK.format(nick),
+                                headers={'TRN-Api-Key': API_KEY},
+                                timeout=2.6).json()
+        if 'error' in response:
+            print(response.get('message', 'No message in response'))
+            return None
+
+        stats = next((x['Stats'] for x in response['Stats']
+                      if x['Season'] == SEASON and x['Region'] == reg and x['Match'] == type_))
+        stats_ = {x['field']: x['displayValue'] for x in stats}
+        stats_.update(Rank=next(str(x['rank']) for x in stats if x['field'] == 'Rating'))
+
+    except requests.RequestException:
+        pp('Request exception (bgrank.py)', mtype='WARNING')
+        return None
+    except (KeyError, ValueError) as e:
+        pp('{}: {} key is missing (bgrank.py)'.format(e.__class__.__name__, str(e)), mtype='WARNING')
+        return None
+
+    return RESP.format(type=type_.capitalize(), region=reg.upper(), **stats_)
+
+
+''' OLD STUFF, parsing pubg.me
+s = BeautifulSoup(page, 'html.parser')
+a = s.select('div.profile-match-overview-solo div.profile-match-overview-header div.col-lg-10 div.col-md-4 div.stat div.value')
+a = s.select('div.profile-match-overview-solo div.hidden-sm-down div.col-lg-10 div.col-md-4 div.stat div.value')'''
+
 
 if __name__ == '__main__':
     class m: pass
     n = m(); n.chan = '#c_a_k_e'
-    print(bgrank(None, ['s'], n))
-    print(bgrank(None, ['d'], n))
-    print(bgrank(None, ['sq'], n))
+    print(bgrank(None, ['solo'], n)); time.sleep(2)
+    print(bgrank(None, ['DUO', 'na'], n)); time.sleep(2)
+    print(bgrank(None, ['SQuad', 'eu'], n))
+
