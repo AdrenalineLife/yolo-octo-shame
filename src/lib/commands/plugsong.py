@@ -61,7 +61,7 @@ def room_state():
 def name_of_user(uid):
     if uid is None:
         return ''
-    resp = get('users/%s' % uid)
+    resp = get('users/{}'.format(uid))
     if resp['status'] != 'ok':
         return ''
     else:
@@ -83,12 +83,12 @@ plug_rooms = {
 
 
 def plugsong(self, args, msg):
-    global not_logged, plug_rooms, curr_room
+    global not_logged, plug_rooms, curr_room, session
 
     try:
         if not_logged:
             if login(mail, passw)['status'] != 'ok':  # logging and checking
-                pp('Failed logging to PlugDJ', 'ERROR')
+                pp('Failed logging to PlugDJ', mtype='ERROR')
                 return 'Ошибка подключения к PlugDJ'
             else:
                 not_logged = False
@@ -103,18 +103,20 @@ def plugsong(self, args, msg):
 
     except PlugLoginError:
         not_logged = True
-        pp('Failed logging to PlugDJ: csrf is None', 'ERROR')
+        session.cookies.clear()
+        pp('Failed logging to PlugDJ: csrf is None', mtype='ERROR')
         return 'Ошибка подключения к PlugDJ'
     except Exception as detail:
         not_logged = True
-        pp('Failed logging to PlugDJ: {}'.format(detail), 'ERROR')
+        session.cookies.clear()
+        pp('Failed logging to PlugDJ: {}'.format(detail), mtype='ERROR')
         return 'Ошибка подключения к PlugDJ'
 
     #print(json.dumps(state, sort_keys=True, indent=4))
 
     if state['status'] != 'ok':
         not_logged = True
-        pp('Failed getting room state', 'ERROR')
+        pp('Failed getting room state', mtype='ERROR')
         return 'Ошибка подключения к PlugDJ'
     else:
         state = state['data'][0]
@@ -159,7 +161,7 @@ if __name__ == '__main__':  # little bit of testing
     class MSG(object):  # fake message class
         pass
     msg_ = MSG()
-    msg_.chan = '#2'
+    msg_.chan = '#1'
 
     print(plugsong(None, [], msg_))
     #print(plugsong(None, [], msg_)); time.sleep(2)
