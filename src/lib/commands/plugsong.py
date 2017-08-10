@@ -126,18 +126,18 @@ def plugsong(self, args, msg):
         if args and args[0] == 'room':
             resp = '{author} — {title} [{dur}]. DJ: {dj}. Людей: {ppl}. Очередь: {queue}. {url}'
         else:
-            resp = 'Сейчас играет на {url}: {author} — {title} [{dur}]. DJ: {dj}'
+            resp = 'Сейчас играет на {url} : {author} — {title} [{dur}]. DJ: {dj}'
     else:
         if args and args[0] == 'room':
             resp = 'Людей: {ppl}. Очередь: {queue}. {url}'
         else:
-            return 'В данный момент музыка на PlugDJ не играет'
+            return 'В данный момент музыка на PlugDJ не играет. {url}'
 
     if playback:  # if music is playing
         seconds = playback['media']['duration']
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
-        time_str = '{0:0>2}:{1:0>2}:{2:0>2}'.format(h, m, s) if h else '{0:0>2}:{1:0>2}'.format(m, s)
+        time_str = '{:0>2}:{:0>2}:{:0>2}'.format(h, m, s) if h else '{:0>2}:{:0>2}'.format(m, s)
 
         dj_id = state['booth']['currentDJ']
         dj_name = next((x['username'] for x in state['users'] if x['id'] == dj_id), None)
