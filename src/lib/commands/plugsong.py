@@ -131,7 +131,7 @@ def plugsong(self, args, msg):
         if args and args[0] == 'room':
             resp = 'Людей: {ppl}. Очередь: {queue}. {url}'
         else:
-            return 'В данный момент музыка на PlugDJ не играет. {url}'
+            resp = 'В данный момент музыка на PlugDJ не играет. {url}'
 
     if playback:  # if music is playing
         seconds = playback['media']['duration']
@@ -164,6 +164,7 @@ if __name__ == '__main__':  # little bit of testing
     msg_.chan = '#1'
 
     print(plugsong(None, [], msg_))
-    #print(plugsong(None, [], msg_)); time.sleep(2)
-    #print(plugsong(None, [], msg_))
+    msg_.chan = '#2'
+    print(plugsong(None, [], msg_))
+    print(plugsong(None, [], msg_))
     print(plugsong(None, ['room'], msg_))
