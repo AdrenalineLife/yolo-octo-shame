@@ -4,7 +4,6 @@ Simple IRC Bot for Twitch.tv
 Developed by Aidan Thomson <aidraj0@gmail.com>
 """
 
-import re
 import importlib
 import threading
 import requests
@@ -13,6 +12,7 @@ from collections import deque
 
 import src.lib.irc as irc_
 import src.lib.command_headers as c_headers
+
 from src.lib.functions_general import *
 from src.res.Message_class import Message
 from src.res.Channel_class import Channel
@@ -22,9 +22,7 @@ from src.res.CommandHandler_class import CommandHandler
 class Roboraj(object):
     def __init__(self, config):
         self.config = config
-        self.irc = irc_.Irc(config)
-        self.resub_pat = re.compile(r'^@badges=.*?;msg-param-months=([0-9]+);.+msg-param-sub-plan=(.+?);.*?system-msg=(.+?)\\s.+? :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
-        self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
+        self.irc = irc_.IRC(config)
 
         # list of channels
         self.ch_list = list()
@@ -47,20 +45,6 @@ class Roboraj(object):
         self.chans_request.headers = self.req_headers
         self.chans_request.params = {'channel': ','.join(x[1:] for x in self.config['channels'])}
 
-    def check_for_message(self, data):
-        return bool(self.is_msg_pat.match(data))
-
-    def parse_message(self, msg):
-        first, sec = msg.split(' PRIVMSG ', maxsplit=1)
-        tags, name = first.split(' :')
-        name = name.split('!')[0]
-        chan, message = sec.split(' :', maxsplit=1)
-        # tags = {x.split('=')[0].replace('-','_'): x.split('=')[1] for x in tags.lstrip('@').split(';')}
-        itr = (x.split('=') for x in tags.lstrip('@').split(';'))
-        tags = {key.replace('-', '_'): value for key, value in itr}
-        tags.update(name=name, chan=chan, msg=message)
-        return tags
-
     def load_or_create_channel_list(self):
         try:
             self.ch_list = load_obj('channel_list')
@@ -72,9 +56,11 @@ class Roboraj(object):
         else:
             # deleting unnacessery channels
             self.ch_list[:] = [x for x in self.ch_list if '#' + x.name in self.config['channels']]
-            loaded_ch = [x.name for x in self.ch_list]
+            for x in self.ch_list:
+                x.init_on_load()
 
             # adding missing channels
+            loaded_ch = [x.name for x in self.ch_list]
             for x in self.config['channels']:
                 if x.lstrip('#') not in loaded_ch:
                     self.ch_list.append(Channel(x.lstrip('#'), self.req_headers))
@@ -130,40 +116,32 @@ class Roboraj(object):
             try:
                 resp = self.chans_request.get('https://api.twitch.tv/kraken/streams', timeout=5.0)
                 if resp.status_code != 200:
+                    pp("Failed getting channels state, code {}".format(resp.status_code), mtype='ERROR')
                     time.sleep(4.0)
                     continue
                 resp = resp.json()['streams']
-            except (requests.RequestException, ValueError):
+
+            except (requests.RequestException, ValueError) as e:
+                pp("Failed getting channels state, {}: {}".format(e.__class__.__name__, str(e)), mtype='ERROR')
                 time.sleep(4.0)
                 continue
-            except KeyError:
-                pp("There is no 'streams' key in API response", mtype='ERROR')
+            except KeyError as e:
+                pp("There is no {} key in API response".format(str(e)), mtype='ERROR')
                 time.sleep(4.0)
                 continue
-            #print(json.dumps(resp, indent=4))
+            #print('>>', json.dumps(resp, indent=4))
 
             for ch in self.ch_list:
-                chan_info = [x for x in resp if x['channel']['name'] == ch.name]
-                chan_info = chan_info[0] if chan_info else None
+                chan_info = next((x for x in resp if x['channel']['name'] == ch.name), None)
                 try:
-                    ch.get_state(chan_info)
-                except KeyError:
-                    pp('Failed getting channel state', mtype='error')
+                    ch.set_info(chan_info)
+                except KeyError as e:
+                    pp('Failed getting channel state, {} is missing'.format(str(e)), mtype='error')
                     continue
-                if ch.is_online:
-                    ch.add_game()
-                    ch.started = True
-                else:
-                    if ch.started:
-                        ch.games[-1]['ended'] = time.time()
-                        ch.time_ = time.time()
-                        ch.started = False
-                    if ch.expired():
-                        ch.games = []
-                        ch.max_viewers = 0
-                        ch.created_at_withbreak = ''
+                ch.check_state()
+
             save_obj(self.ch_list, 'channel_list')
-            time.sleep(9.0)
+            time.sleep(24.0)
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
@@ -171,44 +149,31 @@ class Roboraj(object):
         self.irc.send_message(resp, channel)
         pbot(resp, channel)
 
+    def join_channels(self, channels):
+        pass  # TODO
+
     # check if client id is identified
     def check_client_id(self, retries=3):
         cnt = 1
         while cnt <= retries:
             try:
                 r = requests.get('https://api.twitch.tv/kraken/', headers=self.req_headers, timeout=4)
+                #print('{} {} {}'.format(r.status_code, json.dumps(r.json(), indent=4), ''))
                 if r.status_code == 400:
                     pp('Your Client-ID is not identified, your API calls will fail', mtype='ERROR')
                     return False
                 if r.status_code != 200:
-                    pp("Client-ID wasn't checked, trying again", mtype='WARNING')
+                    pp("Client-ID wasn't checked, trying again (code {})".format(r.status_code), mtype='WARNING')
                     cnt += 1
                     continue
-                if r.json()['identified']:
+                else:
                     pp('Your Client-ID is ok, you can use API calls')
                     return True
-                else:
-                    pp('Your Client-ID is not identified, your API calls will fail', mtype='ERROR')
-                    return False
-            except KeyError:
-                pp("There is no 'identified' key, Client-ID wasn't checked, trying again", mtype='WARNING')
-                cnt += 1
-            except (requests.RequestException, ValueError):
+            except requests.RequestException:
                 pp("Client-ID wasn't checked, trying again", mtype='WARNING')
                 cnt += 1
         pp("Unable to check Client-ID in {} retries".format(retries), mtype='WARNING')
         return False
-
-    def check_for_sub(self, msg):
-        res = self.resub_pat.search(msg)
-        if res:
-            res = list(res.groups())
-        else:
-            return tuple()
-        if res[0] == '1':
-            res[0] = 0
-        # in case of new sub, month = 0
-        return res[3], res[2].replace(r'\s', ''), int(res[0]), res[1]
 
     def sub_greetings(self, sub_info):
         if not sub_info:
@@ -226,7 +191,7 @@ class Roboraj(object):
         if not self.config['oauth_password'].startswith('oauth:'):
             pp("OAuth password should start with 'oauth:'", mtype='error')
 
-        self.irc.get_irc_socket_object()
+        self.irc.init_irc_socket_object()
         self.load_or_create_channel_list()
         self.load_command_funcs()
 
@@ -240,7 +205,7 @@ class Roboraj(object):
         pbot_not_on_cd = 'Command is valid and not on cooldown. ({}) ({})'
 
         while True:
-            #time.sleep(0.003)
+            time.sleep(0.003)
             try:
                 data = self.irc.recv(self.config['socket_buffer_size']).decode().rstrip()
             except Exception:
@@ -248,7 +213,7 @@ class Roboraj(object):
 
             if len(data) == 0:
                 pp('Connection was lost, reconnecting.')
-                self.irc.get_irc_socket_object()
+                self.irc.init_irc_socket_object()
 
             if time.time() - self.cmd_headers['!ragnaros']['time'] >= 7.0:
                 self.cmd_headers['!ragnaros']['time'] = time.time()
@@ -267,17 +232,17 @@ class Roboraj(object):
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)
-                self.sub_greetings(self.check_for_sub(data_line))
+                self.sub_greetings(self.irc.check_for_sub(data_line))
 
-                if self.check_for_message(data_line):
-                    msg = Message(**self.parse_message(data_line))
+                if self.irc.check_for_message(data_line):
+                    msg = Message(**self.irc.parse_message(data_line))
 
                     ##### RANDOM CUSTOM STUFF
 
                     ##### END OF RANDOM CUSTOM STUFF
 
                     if not self.config['debug']:
-                        pass#ppi(msg.chan, msg.message, msg.disp_name)
+                        ppi(msg.chan, msg.message, msg.disp_name)
 
                     self.chat_messages[msg.chan].appendleft(msg)
 

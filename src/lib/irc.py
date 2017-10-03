@@ -10,16 +10,13 @@ import src.lib.cron
 from src.lib.functions_general import *
 
 
-class Irc(socket.socket):
+class IRC(socket.socket):
     def __init__(self, config):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.config = config
+        self.resub_pat = re.compile(r'^@badges=.*?;msg-param-months=([0-9]+);.+msg-param-sub-plan=(.+?);.*?system-msg=(.+?)\\s.+? :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
+        self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
 
-    @staticmethod
-    def check_is_command(message, valid_commands):
-        for command in valid_commands:
-            if command == message:
-                return True
 
     @staticmethod
     def check_for_connected(data):
@@ -36,7 +33,7 @@ class Irc(socket.socket):
     def send_message(self, message, channel=None):
         super().send('PRIVMSG {} :{}\n'.format(channel, message).encode())
 
-    def get_irc_socket_object(self, recnct_cnt=5):
+    def init_irc_socket_object(self, recnct_cnt=5):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         super().settimeout(10)  # default 10
 
@@ -46,12 +43,12 @@ class Irc(socket.socket):
             super().connect((serv, self.config['port']))
         except Exception:
             if recnct_cnt > 0:
-                pp('Cannot connect to server ({}:{}), trying again.'.format(serv, self.config['port']), 'error')
+                pp('Cannot connect to server ({}:{}), trying again.'.format(serv, self.config['port']), mtype='error')
                 super().close()
                 time.sleep((5 - recnct_cnt)**2)
-                return self.get_irc_socket_object(recnct_cnt=recnct_cnt - 1)
+                return self.init_irc_socket_object(recnct_cnt=recnct_cnt - 1)
             else:
-                pp('Cannot connect to server, exiting', 'ERROR')
+                pp('Cannot connect to server, exiting', mtype='ERROR')
                 sys.exit()
 
         super().settimeout(None)
@@ -61,16 +58,16 @@ class Irc(socket.socket):
         super().send('NICK {}\r\n'.format(self.config['username']).encode())
 
         if self.check_login_status(super().recv(1024).decode()):
-            pp('Login successful.')
+            pp('Login successful')
         else:
-            login_fail_msg = 'Login unsuccessful. (hint: make sure your oauth token is set in config.py).'
-            pp(login_fail_msg, 'error')
+            login_fail_msg = 'Login unsuccessful. (hint: make sure your oauth token is set in config.py)'
+            pp(login_fail_msg, mtype='error')
             sys.exit()
 
         super().send('CAP REQ :twitch.tv/commands\r\n'.encode())
         super().send('CAP REQ :twitch.tv/tags\r\n'.encode())
 
-        # start threads for channels that have cron messages to run
+        # NOT supported atm! start threads for channels that have cron messages to run
         """for channel in self.config['channels']:
             if channel in self.config['cron']:
                 if self.config['cron'][channel]['run_cron']:
@@ -86,9 +83,34 @@ class Irc(socket.socket):
     def join_channels(self, channels):
         pp('Joining channels {}'.format(channels))
         super().send(('JOIN {}\r\n'.format(channels)).encode())
-        pp('Joined channels.')
+        pp('Joined channels')
 
     def leave_channels(self, channels):
         pp('Leaving chanels {},'.format(channels))
         super().send('PART {}\r\n'.format(channels).encode())
-        pp('Left channels.')
+        pp('Left channels')
+
+    def check_for_message(self, data):
+        return bool(self.is_msg_pat.match(data))
+
+    def parse_message(self, msg):
+        first, sec = msg.split(' PRIVMSG ', maxsplit=1)
+        tags, name = first.split(' :')
+        name = name.split('!')[0]
+        chan, message = sec.split(' :', maxsplit=1)
+        # tags = {x.split('=')[0].replace('-','_'): x.split('=')[1] for x in tags.lstrip('@').split(';')}
+        itr = (x.split('=') for x in tags.lstrip('@').split(';'))
+        tags = {key.replace('-', '_'): value for key, value in itr}
+        tags.update(name=name, chan=chan, msg=message)
+        return tags
+
+    def check_for_sub(self, msg):
+        res = self.resub_pat.search(msg)
+        if res:
+            res = list(res.groups())
+        else:
+            return tuple()
+        if res[0] == '1':
+            res[0] = 0
+        # in case of new sub, month = 0
+        return res[3], res[2].replace(r'\s', ''), int(res[0]), res[1]
