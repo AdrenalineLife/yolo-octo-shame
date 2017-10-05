@@ -15,7 +15,7 @@ def history(self, args, msg):
     # basic usage to show list of games
     if not args or args and args[0] in ('t', 'time'):
         result = ch.games_to_str(with_time)
-        n = len(result) // 480
+        n = int(ceil(len(result) / 480))
         games = [x.copy() for x in ch.games]
         chunk_size = int(ceil(len(games) / n))
         resp = []
