@@ -7,6 +7,7 @@ Developed by Aidan Thomson <aidraj0@gmail.com>
 import importlib
 import threading
 import requests
+
 import json
 from collections import deque
 
@@ -31,7 +32,7 @@ class Roboraj(object):
         self.cmd_headers = CommandHandler(c_headers.commands)
 
         # pass
-        self.chat_messages = {chan: deque(maxlen=300) for chan in self.config['channels']}
+        self.chat_messages = {chan: deque(maxlen=400) for chan in self.config['channels']}
 
         # headers for all API requests
         self.req_headers = {'Client-ID': self.config['Client-ID'],
@@ -48,6 +49,8 @@ class Roboraj(object):
     def load_or_create_channel_list(self):
         try:
             self.ch_list = load_obj('channel_list')
+            for x in self.ch_list:
+                x._last_time_updated = time.time()
         except FileNotFoundError:
             self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
         except Exception:

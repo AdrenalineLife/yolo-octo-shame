@@ -23,6 +23,12 @@ def get_interval(duration):
         return 3600*2
     return 3600*4
 
+def get_labelinfo(interval):
+    if interval < 3600:
+        return (interval // 60), 'm'
+    else:
+        return (interval // 3600), 'h'
+
 class Channel(object):
     def __init__(self, name, headers, break_time=630):
         self.name = name.lower()
@@ -57,6 +63,7 @@ class Channel(object):
         self.created_at_withbreak_dt = None  # as a datetime
 
         self._started_tracking = None
+        self._last_time_updated = None
 
         self.video_height = 0
         self.fps = 0
@@ -85,6 +92,9 @@ class Channel(object):
                 self.created_at_withbreak = self.created_at
 
             self.plot_stuff()
+            self._last_time_updated = time.time()
+            if len(self.viewer_list) % 100 == 0:
+                self.make_plot()
 
     def check_state(self):
         if self.is_online:
@@ -108,11 +118,12 @@ class Channel(object):
                 self._started_tracking = None
 
     def init_on_load(self):
+        if time.time() - self._last_time_updated > 120:
+            self._started_tracking = None
+            self.viewer_list = []
         self.started = False
-        self._started_tracking = None
         self.created_at_withbreak_dt = None
         self.created_at_dt = None
-        #self.viewer_list = []
 
     def shorten_game(self, game):
         return shorten_games.shorten.get(game, game)
@@ -171,7 +182,7 @@ class Channel(object):
             f_.close()'''
 
     def make_plot(self):
-        name = 'input_output/plot_{}_{}.png'.format(self.name, time.strftime('%H-%M-%S', time.localtime()))
+        name = 'input_output\plot_{0}_{1}.png'.format(self.name, time.strftime('%m-%d_%H-%M-%S', time.localtime()))
 
         N = len(self.viewer_list)
         dur = int((datetime.datetime.utcnow() - self._started_tracking).total_seconds())
@@ -180,28 +191,37 @@ class Channel(object):
         step = int(interval / dur * N)
         offset = int(sec_start / dur * N)
 
+        z, lbl = get_labelinfo(interval)
+
         if N < 10:
             return None
         if not step:
             return None
 
-        fig, ax = plt.subplots(1, 1)
+        #fig, ax = plt.subplots(1, 1)
         ax.plot(self.viewer_list)
         '''ax.text(0.55, -0.05, 'matplotlib фыва asddsggd', horizontalalignment='right',
                 verticalalignment='top',
                 rotation='35',
                 fontsize=8,
                 transform=ax.transAxes)'''
-        ax.tick_params(axis='x', which='both', labelsize=7)
+        #ax.tick_params(axis='x', which='both', labelsize=7)
         ax.axis([0, N - 1, 0, int(max(self.viewer_list) * 1.07)])
-        ax.xaxis.set_minor_locator(AutoMinorLocator(2))
-        ax.xaxis.set_tick_params(direction='in', top=True, which='both')
-        ax.xaxis.set_ticks([x - offset for x in range(0, N + 2, step) if 0 <= x - offset < N])
-        # ax.xaxis.set_ticklabels(['{}'.format(to_time(x)[0]) for x in range(0, N)])
-        ax.yaxis.set_tick_params(right=True)
+        #ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+        #ax.xaxis.set_tick_params(direction='in', top=True, which='both')
+        ax.xaxis.set_ticks([x - offset for x in range(0, N*2, step) if 0 <= x - offset < N])
+        ax.xaxis.set_ticklabels(['{}{}'.format(z*x, lbl) for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
+        #ax.yaxis.set_tick_params(right=True)
 
         #fig.subplots_adjust(bottom=0.25)
         fig.savefig(name, bbox_inches='tight')
 
     def __repr__(self):
         return json.dumps(self.__dict__, indent=4)
+
+
+fig, ax = plt.subplots(1, 1, figsize=(11, 6), dpi=100)
+ax.tick_params(axis='x', which='both', labelsize=7)
+ax.xaxis.set_minor_locator(AutoMinorLocator(2))
+ax.xaxis.set_tick_params(direction='in', top=True, which='both')
+ax.yaxis.set_tick_params(right=True)
