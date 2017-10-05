@@ -17,9 +17,9 @@ def history(self, args, msg):
         result = ch.games_to_str(with_time)
         n = len(result) // 480
         games = [x.copy() for x in ch.games]
-        chunk_size = ceil(len(games) / n)
+        chunk_size = int(ceil(len(games) / n))
         resp = []
-        for games_slice in (games[i:i + n] for i in range(0, len(games), n)):
+        for games_slice in (games[i:i + chunk_size] for i in range(0, len(games), chunk_size)):
             resp.append(' → '.join(self.to_str_with_time(x) for x in games_slice))
         return resp
 
