@@ -22,7 +22,7 @@ def history(self, args, msg):
         chunk_size = int(ceil(len(games) / n))
         resp = []
         for games_slice in (games[i:i + chunk_size] for i in range(0, len(games), chunk_size)):
-            resp.append(' → '.join(ch.to_str_with_time(x) for x in games_slice))
+            resp.append(' → '.join(ch.to_str_w_time(x) for x in games_slice))
         return resp
 
     # advanced usage to manage list of games
