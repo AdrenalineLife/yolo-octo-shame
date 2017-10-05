@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Life'
 
+from math import ceil
+
 from src.lib.functions_general import pp
 
 
@@ -13,13 +15,14 @@ def history(self, args, msg):
     # basic usage to show list of games
     if not args or args and args[0] in ('t', 'time'):
         result = ch.games_to_str(with_time)
-        n = len(result // 480)
+        n = len(result) // 480
         games = [x.copy() for x in ch.games]
+        chunk_size = ceil(len(games) / n)
         resp = []
         for games_slice in (games[i:i + n] for i in range(0, len(games), n)):
             resp.append(' → '.join(self.to_str_with_time(x) for x in games_slice))
         return resp
-    
+
     # advanced usage to manage list of games
     if args and args[0] in ('clear', 'del'):
         if msg.is_mod or msg.name == 'adrenaline_life':
