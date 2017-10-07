@@ -21,8 +21,12 @@ def pp(message, mtype='INFO'):
             mtype = red.format(mtype)
         elif mtype == 'WARNING':
             mtype = yel.format(mtype)
-
-    print('[{}] [{}] {}'.format(time.strftime('%H:%M:%S', time.localtime()), mtype, message))
+    resp = '[{}] [{}] {}'.format(time.strftime('%H:%M:%S', time.localtime()), mtype, message)
+    if mtype in ('ERROR', 'WARNING'):
+        f_ = open(r'input_output\pp.txt', 'at')
+        f_.write(resp + '\r\n')
+        f_.close()
+    print(resp)
 
 
 # for printing chat messages

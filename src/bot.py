@@ -49,8 +49,6 @@ class Roboraj(object):
     def load_or_create_channel_list(self):
         try:
             self.ch_list = load_obj('channel_list')
-            for x in self.ch_list:
-                x._last_time_updated = time.time()
         except FileNotFoundError:
             self.ch_list = [Channel(x.lstrip('#'), self.req_headers) for x in self.config['channels']]
         except Exception:
@@ -120,9 +118,14 @@ class Roboraj(object):
                 resp = self.chans_request.get('https://api.twitch.tv/kraken/streams', timeout=5.0)
                 if resp.status_code != 200:
                     pp("Failed getting channels state, code {}".format(resp.status_code), mtype='ERROR')
-                    time.sleep(4.0)
+                    time.sleep(6.0)
                     continue
-                resp = resp.json()['streams']
+                resp_j = resp.json()
+                if not ('streams' in resp_j and resp_j['streams']):
+                    f_ = open(r'input_output\req.txt', 'at')
+                    f_.write('{:-^30}\r\n{}\r\n'.format(time.strftime('%H:%M:%S', time.localtime()),
+                                                        json.dumps(resp_j, indent=4)))
+                    f_.close()
 
             except (requests.RequestException, ValueError) as e:
                 pp("Failed getting channels state, {}: {}".format(e.__class__.__name__, str(e)), mtype='ERROR')
@@ -132,19 +135,19 @@ class Roboraj(object):
                 pp("There is no {} key in API response".format(str(e)), mtype='ERROR')
                 time.sleep(4.0)
                 continue
-            #print('>>', json.dumps(resp, indent=4))
+            #print('>>', json.dumps(resp_j, indent=4))
 
             for ch in self.ch_list:
-                chan_info = next((x for x in resp if x['channel']['name'] == ch.name), None)
+                chan_info = next((x for x in resp_j['streams'] if x['channel']['name'] == ch.name), None)
                 try:
                     ch.set_info(chan_info)
                 except KeyError as e:
-                    pp('Failed getting channel state, {} is missing'.format(str(e)), mtype='error')
+                    pp('Failed getting channel state, {} key is missing'.format(str(e)), mtype='error')
                     continue
                 ch.check_state()
 
             save_obj(self.ch_list, 'channel_list')
-            time.sleep(24.0)
+            time.sleep(31.0)
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)

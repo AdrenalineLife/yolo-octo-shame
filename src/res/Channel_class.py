@@ -4,10 +4,14 @@ __author__ = 'Life'
 import json
 import time
 import datetime
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 
 import src.res.shorten_games as shorten_games
+from src.lib.functions_general import pp
 
 
 def get_interval(duration):
@@ -118,7 +122,8 @@ class Channel(object):
                 self._started_tracking = None
 
     def init_on_load(self):
-        if time.time() - self._last_time_updated > 120:
+        if time.time() - self._last_time_updated > 120.0:
+            pp('Viewer list was cleared')
             self._started_tracking = None
             self.viewer_list = []
         self.started = False
@@ -182,7 +187,7 @@ class Channel(object):
             f_.close()'''
 
     def make_plot(self):
-        name = 'input_output\plot_{0}_{1}.png'.format(self.name, time.strftime('%m-%d_%H-%M-%S', time.localtime()))
+        name = r'input_output/plot_{0}_{1}.png'.format(self.name, time.strftime('%m-%d_%H-%M-%S', time.localtime()))
 
         N = len(self.viewer_list)
         dur = int((datetime.datetime.utcnow() - self._started_tracking).total_seconds())
@@ -193,12 +198,13 @@ class Channel(object):
 
         z, lbl = get_labelinfo(interval)
 
-        if N < 10:
+        if N < 6:
             return None
         if not step:
             return None
 
         #fig, ax = plt.subplots(1, 1)
+        plt.cla()
         ax.plot(self.viewer_list)
         '''ax.text(0.55, -0.05, 'matplotlib фыва asddsggd', horizontalalignment='right',
                 verticalalignment='top',
