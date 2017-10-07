@@ -36,6 +36,7 @@ class Roboraj(object):
 
         # headers for all API requests
         self.req_headers = {'Client-ID': self.config['Client-ID'],
+                            'authorization': self.config['api_token'],
                             'Accept': "application/vnd.twitchtv.v3+json"}
 
         # boolean to indicate if Client-ID if identified
