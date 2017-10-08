@@ -11,18 +11,19 @@ def history(self, args, msg):
     if ch is None:
         return ''
     with_time = True  # args and args[0] in ('t', 'time')
+    sep = ' → '
 
     # basic usage to show list of games
-    if not args or args and args[0] in ('t', 'time'):
+    if True:#not args or args and args[0] in ('t', 'time'):
         if not ch.games:
             return 'Список игр пуст'
-        result = ch.games_to_str(with_time)
-        n = int(ceil(len(result) / 480))
-        games = [x.copy() for x in ch.games]
-        chunk_size = int(ceil(len(games) / n))
+        result = ch.games_to_str(with_time, separator=sep)
+        n = ceil(len(result) / 480)
+        result = result.split(sep)
+        chunk_size = ceil(len(result) / n)
         resp = []
-        for games_slice in (games[i:i + chunk_size] for i in range(0, len(games), chunk_size)):
-            resp.append(' → '.join(ch.to_str_w_time(x) for x in games_slice))
+        for games_slice in (result[i:i + chunk_size] for i in range(0, len(result), chunk_size)):
+            resp.append(sep.join(x for x in games_slice))
         return resp
 
     # advanced usage to manage list of games

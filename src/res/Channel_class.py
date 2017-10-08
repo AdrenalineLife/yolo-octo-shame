@@ -27,11 +27,13 @@ def get_interval(duration):
         return 3600*2
     return 3600*4
 
+
 def get_labelinfo(interval):
     if interval < 3600:
         return (interval // 60), 'm'
     else:
         return (interval // 3600), 'h'
+
 
 class Channel(object):
     def __init__(self, name, headers, break_time=630):
@@ -98,7 +100,7 @@ class Channel(object):
 
             self.plot_stuff()
             self._last_time_updated = time.time()
-            if len(self.viewer_list) % 100 == 0:
+            if len(self.viewer_list) % 110 == 0:
                 self.make_plot()
 
     def check_state(self):
@@ -123,8 +125,8 @@ class Channel(object):
                 self._started_tracking = None
 
     def init_on_load(self):
-        if time.time() - self._last_time_updated > 120.0:
-            pp('Viewer list was cleared')
+        if time.time() - self._last_time_updated > 120.0 and self.viewer_list:
+            pp('Viewer list was cleared ({})'.format(self.name))
             self._started_tracking = None
             self.viewer_list = []
         self.started = False

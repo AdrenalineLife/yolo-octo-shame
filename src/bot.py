@@ -114,41 +114,45 @@ class Roboraj(object):
     def get_ids_by_names(self):
         try:
             resp = self.chans_request.get('https://api.twitch.tv/kraken/users',
-                                          timeout=5.0,
+                                          timeout=7.0,
                                           params={'login': ','.join(x[1:] for x in self.config['channels'])})
             resp_j = resp.json()['users']
             if resp.status_code != 200:
-                pp("Failed getting channels state, code {}".format(resp.status_code), mtype='ERROR')
+                pp("Failed getting users ids, code {}".format(resp.status_code), mtype='ERROR')
                 return
 
-        except (requests.RequestException, ValueError) as e:
-            pp("Failed getting channels state, {}: {}".format(e.__class__.__name__, str(e)), mtype='ERROR')
-            return
-        except KeyError as e:
-            pp("There is no {} key in API response".format(str(e)), mtype='ERROR')
+        except (requests.RequestException, ValueError, KeyError) as e:
+            pp("Failed getting users ids, {}: {}".format(e.__class__.__name__, str(e)), mtype='ERROR')
             return
         #print('>>', json.dumps(resp_j, indent=4))
 
+        not_found = []
         for ch in self.ch_list:
             try:
-                chan_id = next((x['_id'] for x in resp_j if x['name'] == ch.name), None)
+                chan_id = next((x['_id'] for x in resp_j if x['name'] == ch.name), '')
                 ch.chan_id = chan_id
+                if not chan_id:
+                    not_found.append(ch.name)
             except KeyError as e:
-                pp('Failed getting channel state, {} key is missing'.format(str(e)), mtype='error')
+                pp('Failed getting users ids, {} key is missing'.format(str(e)), mtype='error')
                 continue
+        if not_found:
+            pp('Users not found: {}'.format(', '.join(not_found)), mtype='WARNING')
+        pp('Got ids by channel names')
 
     def check_channel_state(self):
         while True:
             try:
+                #print(', '.join(str(time.time() - x._last_time_updated) for x in self.ch_list))
                 resp = self.chans_request.get('https://api.twitch.tv/kraken/streams',
                                               timeout=5.0,
                                               params={'channel': ','.join(x.chan_id for x in self.ch_list)})
                 resp_j = resp.json()
                 f__ = open('req.txt', 'at')
-                f__.write('{:-^30}\r\n{} | {} {}\r\n'.format(time.strftime('%H:%M:%S', time.localtime()),
-                                                             list(resp_j.keys()),
-                                                             resp_j.get('error', ''),
-                                                             resp_j.get('message', '')))
+                f__.write('{:-^30}\r\n{} | {} {}\r\n\r\n'.format(time.strftime('%H:%M:%S', time.localtime()),
+                                                                 list(resp_j.keys()),
+                                                                 resp_j.get('error', ''),
+                                                                 resp_j.get('message', '')))
                 f__.close()
                 if resp.status_code != 200:
                     pp("Failed getting channels state, code {}".format(resp.status_code), mtype='ERROR')
