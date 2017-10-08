@@ -35,6 +35,7 @@ def get_labelinfo(interval):
 
 class Channel(object):
     def __init__(self, name, headers, break_time=630):
+        self.chan_id = ''
         self.name = name.lower()
         self.is_online = False
         self.started = False
@@ -67,7 +68,7 @@ class Channel(object):
         self.created_at_withbreak_dt = None  # as a datetime
 
         self._started_tracking = None
-        self._last_time_updated = None
+        self._last_time_updated = time.time()
 
         self.video_height = 0
         self.fps = 0
