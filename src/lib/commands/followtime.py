@@ -21,14 +21,14 @@ def followtime(self, args, msg):
         now = datetime.datetime.utcnow()
         link = 'https://api.twitch.tv/kraken/users/{}/follows/channels/{}'
         try:
-            resp = requests.get(link.format(msg.usr_id, msg.chan_id), headers=self.req_headers, timeout=3.2).json()
+            resp = requests.get(link.format(msg.user_id, msg.chan_id), headers=self.req_headers, timeout=3.2).json()
         except (requests.RequestException, ValueError):
             pp('Error while making request (followtime.py)', mtype='error')
-            return ''
+            return
         if 'error' in resp:
-            return ''
+            return
         created_at = resp['created_at'].split('+')[0]
-        days = (now - datetime.datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%S')).days
+        days = (now - datetime.datetime.strptime(created_at, '%Y-%m-%dT%H:%M:%SZ')).days
         years, days = divmod(days, 365)
         month, days = divmod(days, 30)
         if years:
@@ -38,4 +38,4 @@ def followtime(self, args, msg):
         else:
             resp_string = '{d} дней'
 
-        return '/w (sender) фолловишь ' + resp_string.format(y=years, m=month, d=days)
+        return '(sender) фолловит ' + resp_string.format(y=years, m=month, d=days)
