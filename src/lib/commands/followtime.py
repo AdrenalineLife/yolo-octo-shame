@@ -21,7 +21,7 @@ def followtime(self, args, msg):
         now = datetime.datetime.utcnow()
         link = 'https://api.twitch.tv/kraken/users/{}/follows/channels/{}'
         try:
-            resp = requests.get(link.format(msg.name, msg.chan[1:]), headers=self.req_headers, timeout=3.2).json()
+            resp = requests.get(link.format(msg.usr_id, msg.chan_id), headers=self.req_headers, timeout=3.2).json()
         except (requests.RequestException, ValueError):
             pp('Error while making request (followtime.py)', mtype='error')
             return ''
