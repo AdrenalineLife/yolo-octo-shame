@@ -39,8 +39,8 @@ class Message(object):
         self.is_turbo = kwargs.get('turbo', '0') == '1'
         self.user_type = kwargs.get('user_type', '')
         self.msg_id = kwargs.get('id', '')
-        self.user_id = int(kwargs.get('user_id', 0))
-        self.chan_id = int(kwargs.get('room_id', 0))
+        self.user_id = kwargs.get('user_id', 0)
+        self.chan_id = kwargs.get('room_id', 0)
         self.sent_ts = float(kwargs.get('sent_ts', 0.0)) / 1000.0  # unreliable, may be absent
         self.tmi_sent_ts = float(kwargs.get('tmi_sent_ts', 0.0)) / 1000.0  # unreliable, may be absent
         self.bits = int(kwargs.get('bits', 0))  # amount of bits which were sent
