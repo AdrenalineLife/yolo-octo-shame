@@ -18,7 +18,7 @@ def history(self, args, msg):
         if not ch.games:
             return 'Список игр пуст'
         result = ch.games_to_str(with_time, separator=sep)
-        n = ceil(len(result.encode()) / 499s)
+        n = ceil(len(result.encode()) / 499)
         result = result.split(sep)
         chunk_size = ceil(len(result) / n)
         resp = []
