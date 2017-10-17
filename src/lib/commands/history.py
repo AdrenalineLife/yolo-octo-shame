@@ -14,11 +14,11 @@ def history(self, args, msg):
     sep = ' → '
 
     # basic usage to show list of games
-    if True:#not args or args and args[0] in ('t', 'time'):
+    if not args or args and args[0] in ('t', 'time'):
         if not ch.games:
             return 'Список игр пуст'
         result = ch.games_to_str(with_time, separator=sep)
-        n = ceil(len(result) / 480)
+        n = ceil(len(result.encode()) / 499s)
         result = result.split(sep)
         chunk_size = ceil(len(result) / n)
         resp = []
