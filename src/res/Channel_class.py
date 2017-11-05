@@ -7,6 +7,7 @@ import os
 import datetime
 
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
@@ -24,9 +25,9 @@ def get_interval(duration):
         return 600
     if duration < 36000:
         return 3600
-    if duration < 24*3600:
-        return 3600*2
-    return 3600*4
+    if duration < 24 * 3600:
+        return 3600 * 2
+    return 3600 * 4
 
 
 def get_labelinfo(interval):
@@ -37,12 +38,14 @@ def get_labelinfo(interval):
 
 
 class Channel(object):
-    def __init__(self, name, headers, break_time=630):
+    def __init__(self, name, headers, break_time=500):
         self.chan_id = ''
         self.name = name.lower()
         self.is_online = False
         self.started = False
         self.curr_game = ''
+
+        self.disp_name = ''
 
         # headers of api call
         self.api_headers = headers
@@ -83,6 +86,7 @@ class Channel(object):
     def set_info(self, chan_info):
         self.is_online = chan_info is not None
         if self.is_online:
+            self.disp_name = chan_info['channel']['display_name']
             self.curr_game = chan_info['channel']['game']
             self.viewers = chan_info['viewers']
             self.created_at = chan_info['created_at']
@@ -101,7 +105,7 @@ class Channel(object):
 
             self.plot_stuff()
             self._last_time_updated = time.time()
-            if len(self.viewer_list) % 110 == 0:
+            if len(self.viewer_list) % 90 == 0:
                 self.make_plot()
 
     def check_state(self):
@@ -126,7 +130,7 @@ class Channel(object):
                 self._started_tracking = None
 
     def init_on_load(self):
-        if time.time() - self._last_time_updated > 120.0 and self.viewer_list:
+        if time.time() - self._last_time_updated > 170.0 and self.viewer_list:
             pp('Viewer list was cleared ({})'.format(self.name))
             self._started_tracking = None
             self.viewer_list = []
@@ -185,8 +189,13 @@ class Channel(object):
             self.viewer_list.append(self.viewers)
 
     def make_plot(self):
-        name = r'plot_{0}_{1}.png'.format(self.name, time.strftime('%m-%d_%H-%M-%S', time.localtime()))
-        path = os.path.join('input_output', name)
+        results_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'input_output', self.name)
+
+        if not os.path.isdir(results_dir):
+            os.makedirs(results_dir)
+
+        name = r'plot_{0}_{1}.png'.format(self.name, self.created_at_withbreak_dt.strftime('%d-%m_%H-%M'))
+        path = os.path.join(results_dir, name)
 
         N = len(self.viewer_list)
         dur = int((datetime.datetime.utcnow() - self._started_tracking).total_seconds())
@@ -202,9 +211,15 @@ class Channel(object):
         if not step:
             return None
 
+        upper_title = self.status
+        lower_title = '{0} {1} UTC, max: {2}'.format(self.disp_name,
+                                                     self.created_at_withbreak_dt.strftime('%d.%m %H:%M'),
+                                                     self.max_viewers)
+
         plt.cla()
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.plot(self.viewer_list)
+        ax.set_title('{}\n{}'.format(upper_title, lower_title), loc='left')
         '''ax.text(0.55, -0.05, 'matplotlib фыва asddsggd', horizontalalignment='right',
                 verticalalignment='top',
                 rotation='35',
@@ -212,16 +227,16 @@ class Channel(object):
                 transform=ax.transAxes)'''
         ax.axis([0, N - 1, 0, int(max(self.viewer_list) * 1.07)])
         ax.xaxis.set_ticks([x - offset for x in range(0, N*2, step) if 0 <= x - offset < N])
-        ax.xaxis.set_ticklabels(['{}{}'.format(z*x, lbl) for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
+        ax.xaxis.set_ticklabels(['{}{}'.format(z * x, lbl) for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
 
-        #fig.subplots_adjust(bottom=0.25)
-        fig.savefig(path, bbox_inches='tight')
+        # fig.subplots_adjust(bottom=0.25)
+        fig.savefig(path, bbox_inches='tight', dpi=100)
 
     def __repr__(self):
         return json.dumps(self.__dict__, indent=4)
 
 
-fig, ax = plt.subplots(1, 1, figsize=(11, 6), dpi=100)
+fig, ax = plt.subplots(1, 1, figsize=(11, 6))
 ax.tick_params(axis='x', which='both', labelsize=7)
 ax.xaxis.set_tick_params(direction='in', top=True, which='both')
 ax.yaxis.set_tick_params(right=True)
