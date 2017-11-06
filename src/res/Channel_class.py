@@ -4,7 +4,7 @@ __author__ = 'Life'
 import json
 import time
 import os
-import datetime
+import datetime as dt
 
 import matplotlib
 
@@ -17,6 +17,8 @@ from src.lib.functions_general import pp
 
 
 def get_interval(duration):
+    if duration < 300:
+        return 60
     if duration < 600:
         return 180
     if duration < 1800:
@@ -82,6 +84,7 @@ class Channel(object):
         self.status = ''
 
         self.viewer_list = []
+        self.plot_game_list = []
 
     def set_info(self, chan_info):
         self.is_online = chan_info is not None
@@ -97,13 +100,13 @@ class Channel(object):
             if self.viewers > self.max_viewers:
                 self.max_viewers = self.viewers
             if self.created_at_dt is None:
-                self.created_at_dt = datetime.datetime.strptime(self.created_at, '%Y-%m-%dT%H:%M:%SZ')
+                self.created_at_dt = dt.datetime.strptime(self.created_at, '%Y-%m-%dT%H:%M:%SZ')
             if self.created_at_withbreak_dt is None:
-                self.created_at_withbreak_dt = datetime.datetime.strptime(self.created_at, '%Y-%m-%dT%H:%M:%SZ')
+                self.created_at_withbreak_dt = dt.datetime.strptime(self.created_at, '%Y-%m-%dT%H:%M:%SZ')
             if not self.created_at_withbreak:
                 self.created_at_withbreak = self.created_at
 
-            self.plot_stuff()
+            self.add_plot_point()
             self._last_time_updated = time.time()
             if len(self.viewer_list) % 90 == 0:
                 self.make_plot()
@@ -111,19 +114,22 @@ class Channel(object):
     def check_state(self):
         if self.is_online:
             self.add_game()
+            self.add_plot_game()
             self.started = True
             if self._started_tracking is None:
-                self._started_tracking = datetime.datetime.utcnow()
+                self._started_tracking = dt.datetime.utcnow()
         else:
-            if self.started:
+            if self.started:  # if the stream went offline recently
                 self.make_plot()
                 self.viewer_list = []
                 self.games[-1]['ended'] = time.time()
+                self.plot_game_list = []
                 self._offline_ts = time.time()
                 self.started = False
                 self._started_tracking = None
-            if self.expired():
+            if self.expired():  # if the stream has ended a "long" time ago, thus break time expired
                 self.games = []
+                self.plot_game_list = []
                 self.max_viewers = 0
                 self.created_at_withbreak = ''
                 self.created_at_withbreak_dt = None
@@ -134,6 +140,7 @@ class Channel(object):
             pp('Viewer list was cleared ({})'.format(self.name))
             self._started_tracking = None
             self.viewer_list = []
+            self.plot_game_list = []
         self.started = False
         self.created_at_withbreak_dt = None
         self.created_at_dt = None
@@ -149,11 +156,18 @@ class Channel(object):
         else:
             self.games.append({'game': self.curr_game, 'started': time.time()})
 
+    def add_plot_game(self):
+        if self.plot_game_list:
+            if self.plot_game_list[-1][0] != self.curr_game:
+                self.plot_game_list.append((self.curr_game, dt.datetime.utcnow()))
+        else:
+            self.plot_game_list.append((self.curr_game, dt.datetime.utcnow()))
+
     def expired(self):
         return time.time() - self._offline_ts > self.break_time
 
     def uptime(self, with_break=False):  # in seconds
-        now_ = datetime.datetime.utcnow()
+        now_ = dt.datetime.utcnow()
         if with_break:
             return (now_ - self.created_at_withbreak_dt).total_seconds()
         else:
@@ -175,7 +189,7 @@ class Channel(object):
             else:
                 return separator.join(self.to_str_w_time(x) for x in self.games)
         else:
-            return 'Игр не было'
+            return ''
 
     def clear_games_list(self):
         self.games[:] = []
@@ -184,26 +198,24 @@ class Channel(object):
     def del_game(self, index):
         del self.games[index]
 
-    def plot_stuff(self):
+    def add_plot_point(self):
         if self.is_online:
             self.viewer_list.append(self.viewers)
 
     def make_plot(self):
         results_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'input_output', self.name)
-
         if not os.path.isdir(results_dir):
             os.makedirs(results_dir)
 
-        name = r'plot_{0}_{1}.png'.format(self.name, self.created_at_withbreak_dt.strftime('%d-%m_%H-%M'))
+        name = r'plot_{0}_{1}.png'.format(self.name, self._started_tracking.strftime('%d-%m_%H-%M'))
         path = os.path.join(results_dir, name)
 
         N = len(self.viewer_list)
-        dur = int((datetime.datetime.utcnow() - self._started_tracking).total_seconds())
+        dur = int((dt.datetime.utcnow() - self._started_tracking).total_seconds())
         interval = get_interval(dur)
         sec_start = int((self._started_tracking - self.created_at_dt).total_seconds()) % interval
         step = int(interval / dur * N)
         offset = int(sec_start / dur * N)
-
         z, lbl = get_labelinfo(interval)
 
         if N < 6:
@@ -213,18 +225,21 @@ class Channel(object):
 
         upper_title = self.status
         lower_title = '{0} {1} UTC, max: {2}'.format(self.disp_name,
-                                                     self.created_at_withbreak_dt.strftime('%d.%m %H:%M'),
+                                                     self.created_at_dt.strftime('%d.%m %H:%M'),
                                                      self.max_viewers)
 
         plt.cla()
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.plot(self.viewer_list)
         ax.set_title('{}\n{}'.format(upper_title, lower_title), loc='left')
-        '''ax.text(0.55, -0.05, 'matplotlib фыва asddsggd', horizontalalignment='right',
-                verticalalignment='top',
-                rotation='35',
-                fontsize=8,
-                transform=ax.transAxes)'''
+
+        for game, game_started in self.plot_game_list:
+            pos = (game_started - self._started_tracking).total_seconds()
+            ax.text(pos / dur, -0.04,
+                    game,
+                    ha='right', va='top',
+                    rotation='40', fontsize=8,
+                    transform=ax.transAxes)
         ax.axis([0, N - 1, 0, int(max(self.viewer_list) * 1.07)])
         ax.xaxis.set_ticks([x - offset for x in range(0, N*2, step) if 0 <= x - offset < N])
         ax.xaxis.set_ticklabels(['{}{}'.format(z * x, lbl) for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
