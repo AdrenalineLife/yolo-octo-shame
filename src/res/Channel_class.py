@@ -39,6 +39,13 @@ def get_labelinfo(interval):
         return (interval // 3600), 'h'
 
 
+def normalize_game(game):
+    game = shorten_games.shorten.get(game, game)
+    if len(game) > 34:
+        game = game[:28] + '…'
+    return game
+
+
 class Channel(object):
     def __init__(self, name, headers, break_time=500):
         self.chan_id = ''
@@ -236,7 +243,7 @@ class Channel(object):
         for game, game_started in self.plot_game_list:
             pos = (game_started - self._started_tracking).total_seconds()
             ax.text(pos / dur, -0.04,
-                    game,
+                    normalize_game(game),
                     ha='right', va='top',
                     rotation='40', fontsize=8,
                     transform=ax.transAxes)
