@@ -241,12 +241,13 @@ class Channel(object):
         ax.set_title('{}\n{}'.format(upper_title, lower_title), loc='left')
 
         for game, game_started in self.plot_game_list:
-            pos = (game_started - self._started_tracking).total_seconds()
-            ax.text(pos / dur, -0.04,
+            pos = (game_started - self._started_tracking).total_seconds() / dur
+            ax.text(pos, -0.04,
                     normalize_game(game),
                     ha='right', va='top',
                     rotation='40', fontsize=8,
                     transform=ax.transAxes)
+            ax.axvline(N * pos, 0.02, 0.98, ls='--', lw=1, alpha=0.3, c='black')
         ax.axis([0, N - 1, 0, int(max(self.viewer_list) * 1.07)])
         ax.xaxis.set_ticks([x - offset for x in range(0, N*2, step) if 0 <= x - offset < N])
         ax.xaxis.set_ticklabels(['{}{}'.format(z * x, lbl) for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
