@@ -115,7 +115,7 @@ class Channel(object):
 
             self.add_plot_point()
             self._last_time_updated = time.time()
-            if len(self.viewer_list) % 90 == 0:
+            if len(self.viewer_list) % 20 == 0:
                 self.make_plot()
 
     def check_state(self):
@@ -230,10 +230,17 @@ class Channel(object):
         if not step:
             return None
 
+        avg = sum(self.viewer_list) / N
+        if avg < 20:
+            avg = round(avg, 2)
+        else:
+            avg = int(avg)
+
         upper_title = self.status
-        lower_title = '{0} {1} UTC, max: {2}'.format(self.disp_name,
-                                                     self.created_at_dt.strftime('%d.%m %H:%M'),
-                                                     self.max_viewers)
+        lower_title = '{0} {1} UTC, max: {2}, average: {3}'.format(self.disp_name,
+                                                                   self.created_at_dt.strftime('%d.%m %H:%M'),
+                                                                   max(self.viewer_list),
+                                                                   avg)
 
         plt.cla()
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
