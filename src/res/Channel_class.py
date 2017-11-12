@@ -134,6 +134,7 @@ class Channel(object):
                 self._offline_ts = time.time()
                 self.started = False
                 self._started_tracking = None
+                self.created_at_dt = None
             if self.expired():  # if the stream has ended a "long" time ago, thus break time expired
                 self.games = []
                 self.plot_game_list = []
