@@ -25,7 +25,7 @@ class Message(object):
 
         self.created_ts = time.time()  # time when this object was created
         self.name = name.replace('\s', '')
-        self.disp_name = display_name.replace('\s', '') if display_name else self.name
+        self.disp_name = display_name.replace('\s', ' ').strip() if display_name else self.name
         self.orig_disp_name = self.disp_name  # copy of original display name in case of changing "disp_name"
 
         if not use_nonlatin_name and not self.is_normal_disp_name():  # replace hieroglyphic disp_name if needed
