@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Life'
 
+import shutil
 import json
 import time
 import os
@@ -41,8 +42,8 @@ def get_labelinfo(interval):
 
 def normalize_game(game):
     game = shorten_games.shorten.get(game, game)
-    if len(game) > 34:
-        game = game[:28] + '…'
+    if len(game) > 32:
+        game = game[:25] + '…'
     return game
 
 
@@ -210,13 +211,13 @@ class Channel(object):
         if self.is_online:
             self.viewer_list.append(self.viewers)
 
-    def make_plot(self):
+    def make_plot(self, copy_plot=True):
         results_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'input_output', self.name)
         if not os.path.isdir(results_dir):
             os.makedirs(results_dir)
 
-        name = r'plot_{0}_{1}.png'.format(self.name, self._started_tracking.strftime('%d-%m_%H-%M'))
-        path = os.path.join(results_dir, name)
+        file_name = r'plot_{0}_{1}.png'.format(self.name, self._started_tracking.strftime('%d-%m_%H-%M'))
+        full_path = os.path.join(results_dir, file_name)
 
         N = len(self.viewer_list)
         dur = int((dt.datetime.utcnow() - self._started_tracking).total_seconds())
@@ -243,29 +244,56 @@ class Channel(object):
                                                                    max(self.viewer_list),
                                                                    avg)
 
-        plt.cla()
+        plt.cla()  # clear the axes
         ax.xaxis.set_minor_locator(AutoMinorLocator(2))
         ax.plot(self.viewer_list)
         ax.set_title('{}\n{}'.format(upper_title, lower_title), loc='left')
 
         for game, game_started in self.plot_game_list:
             pos = (game_started - self._started_tracking).total_seconds() / dur
+            # put the name of a game
             ax.text(pos, -0.04,
                     normalize_game(game),
                     ha='right', va='top',
                     rotation='40', fontsize=8,
                     transform=ax.transAxes)
+            # vertical line to indicate the start of a new game
             ax.axvline(N * pos, 0.02, 0.98, ls='--', lw=1, alpha=0.3, c='black')
         ax.axis([0, N - 1, 0, int(max(self.viewer_list) * 1.07)])
         ax.xaxis.set_ticks([x - offset for x in range(0, N*2, step) if 0 <= x - offset < N])
-        ax.xaxis.set_ticklabels(['{}{}'.format(z * x, lbl) for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
+        ax.xaxis.set_ticklabels(['{}{}'.format(z * x, lbl)
+                                 for x, _ in enumerate(ax.xaxis.get_major_ticks(), 1)])
 
         # fig.subplots_adjust(bottom=0.25)
-        fig.savefig(path, bbox_inches='tight', dpi=100)
+        try:
+            fig.savefig(full_path, bbox_inches='tight', dpi=100)
+            if copy_plot:
+                self.copy_plot(full_path, 'all-plots-static')
+            return full_path
+        except Exception as e:
+            pp('Failed to save "{}" plot. {}: {}'.format(self.disp_name, e.__class__.__name__, str(e)),
+               mtype='error')
+            return None
+
+    def copy_plot(self, plot_path, folder_name):
+        dest_dir = os.path.join(plot_path, '..', '..', folder_name)
+        if not os.path.isdir(dest_dir):
+            os.makedirs(dest_dir)
+        dest_path = os.path.join(dest_dir, 'plot_{}.png'.format(self.name))
+
+        try:
+            return shutil.copyfile(plot_path, dest_path)
+        except (shutil.SameFileError, OSError) as e:
+            pp('Failed to copy "{}" plot. {}: {}'.format(self.disp_name, e.__class__.__name__, str(e)),
+               mtype='error')
+            return None
 
     def __repr__(self):
         return json.dumps(self.__dict__, indent=4)
 
+
+# these are general settings for axes,
+# set when this file is imported
 
 fig, ax = plt.subplots(1, 1, figsize=(11, 6))
 ax.tick_params(axis='x', which='both', labelsize=7)
