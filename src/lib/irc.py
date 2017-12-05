@@ -104,13 +104,32 @@ class IRC(socket.socket):
         tags.update(name=name, chan=chan, msg=message)
         return tags
 
+    def parse_usernotice(self, msg):
+        #print(msg)
+        first, sec = msg.split(' USERNOTICE ', maxsplit=1)
+        tags = first.split(' :')[0]
+        if ':' in sec:
+            chan, message = sec.split(' :', maxsplit=1)
+        else:
+            chan, message = sec, ''
+        itr = (x.split('=') for x in tags.lstrip('@').split(';'))
+        tags = {key.replace('-', '_'): value for key, value in itr}
+        tags.update(chan=chan, msg=message)
+        return tags
+
     def check_for_sub(self, msg):
         res = self.resub_pat.search(msg)
         if res:
-            res = list(res.groups())
+            res = self.parse_usernotice(msg)
+            #print(res)
+            if res.get('msg_id') == 'subgift':
+                return []
         else:
-            return tuple()
-        if res[0] == '1':
-            res[0] = 0
+            return []
+        resp = [res['chan'], res['login'].replace(r'\s', ''),
+                int(res['msg_param_months']), res['msg_param_sub_plan']]
+        if resp[0] == 1:
+            resp[0] = 0
         # in case of new sub, month = 0
-        return res[3], res[2].replace(r'\s', ''), int(res[0]), res[1]
+        #print(resp)
+        return resp
