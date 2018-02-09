@@ -22,9 +22,13 @@ class CommandHandler(dict):
     def get_cooldown_remaining(self, command, channel):
         return round(self[command]['limit'] - (time.time() - self[command][channel]['last_used']))
 
-    def update_last_used(self, command, channel, name):
-        self[command][channel]['last_used'] = time.time()
-        self[command][channel]['last_used_name'] = name
+    def update_last_used(self, command, channel, name, is_whisper):
+        if self.need_to_update_last_used(command, is_whisper):
+            self[command][channel]['last_used'] = time.time()
+            self[command][channel]['last_used_name'] = name
+
+    def need_to_update_last_used(self, command, is_whisper: bool):
+        return not (is_whisper and self[command].get('whisper_no_cd', False))
 
     def returns_command(self, name):
         return self[name]['return'] == 'command'
@@ -40,6 +44,7 @@ class CommandHandler(dict):
 
     def __repr__(self):
         return json.dumps(self.__dict__, indent=4)
+
 
 if __name__ == '__main__':
     d = {'1':2, '2':3, '3':4}

@@ -7,7 +7,6 @@ Developed by Aidan Thomson <aidraj0@gmail.com>
 import importlib
 import threading
 import requests
-
 import json
 from collections import deque
 
@@ -18,6 +17,11 @@ from src.lib.functions_general import *
 from src.res.Message_class import Message
 from src.res.Channel_class import Channel
 from src.res.CommandHandler_class import CommandHandler
+
+
+SAY_CD = '/w (sender) Команда будет доступна через {} сек'
+PBOT_ON_CD = 'Command is on cooldown. ({}) ({}) ({}s remaining)'
+PBOT_NOT_ON_CD = 'Command is valid and not on cooldown. ({}) ({})'
 
 
 class Roboraj(object):
@@ -68,24 +72,27 @@ class Roboraj(object):
 
     def load_command_funcs(self):
         missing_func = []
+        missing_module = []
         for cmd_name, command in self.cmd_headers.items():
             if 'ref' not in command:
                 if command['return'] == 'command':
                     try:
-                        module = importlib.import_module('src.lib.commands.' + cmd_name[1:])
-                        setattr(self.__class__, cmd_name, getattr(module, cmd_name[1:]))
+                        module_ = importlib.import_module('src.lib.commands.' + cmd_name[1:])
+                        setattr(self.__class__, cmd_name, getattr(module_, cmd_name[1:]))
                     except ImportError:
-                        missing_func.append(cmd_name)
-                        pp('No module found: ' + cmd_name, mtype='WARNING')
+                        missing_module.append(cmd_name)
                     except AttributeError:
                         missing_func.append(cmd_name)
-                        pp('No function found: ' + cmd_name, mtype='WARNING')
                 if 'return' not in command or not command['return']:
                     pp("'" + cmd_name + "' command does not have 'return'", mtype='WARNING')
                     missing_func.append(cmd_name)
 
+        if missing_module:
+            pp('No module found: ' + ', '.join(missing_module), mtype='WARNING')
+        if missing_func:
+            pp('No function found: ' + ', '.join(missing_func), mtype='WARNING')
         # deleting commands from dict which we did not find
-        for f in missing_func:
+        for f in missing_func + missing_module:
             self.cmd_headers.pop(f, None)
 
         for cmd_name in self.cmd_headers:
@@ -138,7 +145,7 @@ class Roboraj(object):
                 continue
         if not_found:
             pp('Users not found: {}'.format(', '.join(not_found)), mtype='WARNING')
-        pp('Got ids by channel names')
+        pp('Got IDs by channel names')
 
     def check_channel_state(self):
         while True:
@@ -177,9 +184,13 @@ class Roboraj(object):
             save_obj(self.ch_list, 'channel_list')
             time.sleep(31.0)
 
+    def is_whisper(self, response: str) -> bool:
+        return response.startswith('/w ') or response.startswith('.w ') or \
+            response.startswith('/W ') or response.startswith('.W ')
+
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
-        channel = '#jtv' if result.startswith('/w ') else channel
+        channel = '#jtv' if self.is_whisper(result) else channel
         self.irc.send_message(resp, channel)
         pbot(resp, channel)
 
@@ -231,15 +242,9 @@ class Roboraj(object):
 
         # self.clientid_identified = self.check_client_id()
         self.get_ids_by_names()
-        '''for x in self.ch_list:
-            print(x.name, x.chan_id, end='; ')'''
 
         trd = threading.Thread(target=self.check_channel_state, args=())
         trd.start()
-
-        say_cd = '/w (sender) Команда будет доступна через {} сек'
-        pbot_on_cd = 'Command is on cooldown. ({}) ({}) ({}s remaining)'
-        pbot_not_on_cd = 'Command is valid and not on cooldown. ({}) ({})'
 
         while True:
             time.sleep(0.003)
@@ -269,19 +274,25 @@ class Roboraj(object):
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)
-                self.sub_greetings(self.irc.check_for_sub(data_line))
+                '''if self.irc.is_usernotice.match(data_line):
+                    try:
+                        uno = self.irc.parse_usernotice(data_line)
+                    except Exception:
+                        uno = data_line
+                    f_ = open('userno.txt', 'at', encoding='utf8')
+                    f_.write(str(uno))
+                    f_.write('\r\n\r\n')
+                    f_.close()'''
+                #self.sub_greetings(self.irc.check_for_sub(data_line))
 
                 if self.irc.check_for_message(data_line):
                     msg = Message(**self.irc.parse_message(data_line))
-
-                    ##### RANDOM CUSTOM STUFF
-
-                    ##### END OF RANDOM CUSTOM STUFF
 
                     if not self.config['debug']:
                         ppi(msg.chan, msg.message, msg.disp_name)
 
                     self.chat_messages[msg.chan].appendleft(msg)
+                    #continue
 
                     if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
                         command = msg.message
@@ -294,11 +305,10 @@ class Roboraj(object):
 
                                 if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
                                     sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
-                                    self.send_to_chat(say_cd.format(sec_remaining), msg.disp_name, msg.chan)
-                                    pbot(pbot_on_cd.format(command_name, msg.disp_name, sec_remaining), msg.chan)
+                                    self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan)
+                                    pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                                 else:
-                                    pbot(pbot_not_on_cd.format(command_name, msg.disp_name), msg.chan)
-
+                                    pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
                                     result = self.call_func(command_name, args, msg)
 
                                     if result:
@@ -307,17 +317,19 @@ class Roboraj(object):
                                                 self.send_to_chat(r, msg.disp_name, msg.chan)
                                         else:
                                             self.send_to_chat(result, msg.disp_name, msg.chan)
-                                        self.cmd_headers.update_last_used(command_name, msg.chan, msg.name)
+                                        self.cmd_headers.update_last_used(
+                                            command_name, msg.chan, msg.name, self.is_whisper(result))
                             else:
                                 pp("Invalid number of arguments for '{}'".format(command_name))
 
                         else:
                             if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
                                 sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
-                                self.send_to_chat(say_cd.format(sec_remaining), msg.disp_name, msg.chan)
-                                pbot(pbot_on_cd.format(command_name, msg.disp_name, sec_remaining), msg.chan)
+                                self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan)
+                                pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                             else:
-                                pbot(pbot_not_on_cd.format(command_name, msg.disp_name), msg.chan)
+                                pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
                                 resp = self.cmd_headers.get_return(command_name)
-                                self.cmd_headers.update_last_used(command_name, msg.chan, msg.name)
+                                self.cmd_headers.update_last_used(
+                                    command_name, msg.chan, msg.name, self.is_whisper(resp))
                                 self.send_to_chat(resp, msg.disp_name, msg.chan)
