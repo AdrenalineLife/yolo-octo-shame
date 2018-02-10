@@ -49,6 +49,7 @@ def subday(self, args, msg):
         })
         if resp.status_code != 200:
             pp("subday.py, status code is {}".format(resp.status_code), mtype='ERROR')
+            return ''
         data = resp.json()
         #print(json.dumps(data, indent=4), '\n')
         is_opened = data['isActive']
