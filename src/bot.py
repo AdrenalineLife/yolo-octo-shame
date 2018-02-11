@@ -8,7 +8,7 @@ import importlib
 import threading
 import requests
 import json
-from collections import deque
+from collections import deque, Iterable
 
 import src.lib.irc as irc_
 import src.lib.command_headers as c_headers
@@ -185,8 +185,11 @@ class Roboraj(object):
             time.sleep(31.0)
 
     def is_whisper(self, response: str) -> bool:
-        return response.startswith('/w ') or response.startswith('.w ') or \
-            response.startswith('/W ') or response.startswith('.W ')
+        is_w = lambda x: x.startswith('/w ') or x.startswith('.w ') or \
+               x.startswith('/W ') or x.startswith('.W ')
+        if not isinstance(response, str) and isinstance(response, Iterable):
+            return all(is_w(m) for m in response)
+        return is_w(response)
 
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
