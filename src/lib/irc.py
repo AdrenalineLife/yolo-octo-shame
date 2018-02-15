@@ -116,6 +116,5 @@ class IRC(socket.socket):
         tags.update(chan=chan, msg=message)
         return tags
 
-    def check_for_sub(self, msg):
-        res = self.resub_pat.search(msg)
-        return bool(res)
+    def check_for_sub(self, usernotice):
+        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub')

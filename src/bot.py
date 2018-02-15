@@ -230,9 +230,9 @@ class Roboraj(object):
         if resp:
             if type(resp) == list:
                 for r in resp:
-                    self.send_to_chat(r, channel=sub_info[0])
+                    self.send_to_chat(r, channel=sub_info['chan'])
             else:
-                self.send_to_chat(resp, channel=sub_info[0])
+                self.send_to_chat(resp, channel=sub_info['chan'])
         self.cmd_headers['!sub_greetings']['time'] = time.time()
 
     def run(self):
@@ -277,7 +277,8 @@ class Roboraj(object):
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)
-                '''if self.irc.is_usernotice.match(data_line):
+                if self.irc.is_usernotice.match(data_line):
+                    '''
                     try:
                         uno = self.irc.parse_usernotice(data_line)
                     except Exception:
@@ -286,7 +287,9 @@ class Roboraj(object):
                     f_.write(str(uno))
                     f_.write('\r\n\r\n')
                     f_.close()'''
-                #self.sub_greetings(self.irc.check_for_sub(data_line))
+                    usernotice = self.irc.parse_usernotice(data_line)
+                    if self.irc.check_for_sub(usernotice):
+                        self.sub_greetings()
 
                 if self.irc.check_for_message(data_line):
                     msg = Message(**self.irc.parse_message(data_line))
