@@ -46,7 +46,7 @@ class Ragnaros(object):
         self.last_time_hit = time.time()
         return [
             '/timeout {0} {1}'.format(victim, ban_time),
-            say_hit_you.format(disp_name=victim, ban=ban_time)
+            get_phrase(say_hit_you, self.name).format(disp_name=victim, ban=ban_time)
         ]
 
     def is_time_to_hit(self):
@@ -59,11 +59,19 @@ class Ragnaros(object):
         return json.dumps(self.__dict__, indent=0)
 
 
-say_is_on = '/me > Рагнарос выходит на стол!'
-say_is_off = '/me > Рагнарос покидает доску!'
-say_hit_you = 'Рагнарос попал в тебя, {disp_name}!'
+say_is_on = {'<default>': '/me > Рагнарос выходит на стол!',
+             '#chan1': ''}
+
+say_is_off = {'<default>': '/me > Рагнарос покидает доску!',
+              '#chan1': ''}
+
+say_hit_you = {'<default>': 'Рагнарос попал в тебя, {disp_name}!',
+               '#chan1': ''}
 
 required_ch = cfg.config['channels']
+
+def get_phrase(_dict, chan):
+    return _dict.get(chan, _dict['<default>'])
 
 try:
     ragn_list = load_obj('ragnaros')
@@ -83,8 +91,8 @@ else:
 
 
 def ragnaros(self, args, msg):
-    ragn = next((x for x in ragn_list if x.name == msg.chan), False)
-    if not ragn:
+    ragn = next((x for x in ragn_list if x.name == msg.chan), None)
+    if ragn is None:
         return ''
 
     messages = self.chat_messages.get(msg.chan, None)
@@ -103,7 +111,7 @@ def ragnaros(self, args, msg):
             save_obj(ragn_list, 'ragnaros')
             return [
                 '/color ' + ragn.color,
-                say_is_on if ragn.turned_on else say_is_off,
+                get_phrase(say_is_on, ragn.name) if ragn.turned_on else get_phrase(say_is_off, ragn.name),
                 '/color ' + self.config['color']
             ]
 
