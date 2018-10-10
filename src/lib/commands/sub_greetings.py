@@ -28,7 +28,12 @@ def sub_greetings(self, args, msg):
 
     try:
         if resp_kwargs['msg_id'] == 'subgift':  # in case of subgift
-            resp = chan_greets['gift']
+            total_ = chan_greets.get('gifted_total', '') if resp_kwargs['msg_param_sender_count'] != '0' else ''
+            resp = '{} {}'.format(chan_greets['gift'], total_)
+
+        elif resp_kwargs['msg_id'] == 'submysterygift':
+            resp = chan_greets.get('submysterygift', '')
+
         else:
             if not resp_kwargs['plan'].lower() == 'prime':
                 resp = chan_greets['resub'] if resp_kwargs['m'] else chan_greets['new']
