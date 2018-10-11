@@ -289,7 +289,7 @@ class Roboraj(object):
                     f_.close()'''
                     usernotice = self.irc.parse_usernotice(data_line)
                     if self.irc.check_for_sub(usernotice):
-                        self.sub_greetings()
+                        self.sub_greetings(usernotice)
 
                 if self.irc.check_for_message(data_line):
                     msg = Message(**self.irc.parse_message(data_line))

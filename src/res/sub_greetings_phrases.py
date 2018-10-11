@@ -13,12 +13,14 @@ Chan name is lowcase and starts with "#". For each channel:
     'gift' - for gifts
     'gifted_total' - msg about total amount of gifts, later it concatenates with 'gift'
     'submysterygift' - for mystery gifts (random gifts)
+    'mysterygifts_recipients' - a single msg about all users who got a mysterygift
 Python built-in string formatting is used, where:
     {name} - username of a subscriber
     {m} - number of months; in case of new sub month = 0
     {e} - 'm' times of 'emote'
     {msg_param_sender_count} - total amount of gifts given by user
     {msg_param_mass_gift_count} - amount of subs gifted in a single mysterygift
+    {recipients_list} - list of myst. gift recipients separated by comma
 '''
 
 greetings = {
@@ -29,6 +31,7 @@ greetings = {
         'resub_p': 'p {name} {m}',
         'gift': '',
         'gifted_total': '{msg_param_sender_count}',
+        'mysterygifts_recipients': '',
         'emote': 'Kappa'
     },
     '#channel2': {

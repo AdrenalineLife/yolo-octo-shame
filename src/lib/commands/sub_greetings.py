@@ -12,7 +12,9 @@ for x in greetings:
 RENAME = (('msg_param_months', 'm'),
           ('msg_param_sub_plan', 'plan'),)
 
-# m, plan, givenby, login
+mysteries = {}  # mystery gifts
+
+
 def sub_greetings(self, args, msg):
     resp_kwargs = args.copy()
     for old, new in RENAME:
@@ -28,11 +30,30 @@ def sub_greetings(self, args, msg):
 
     try:
         if resp_kwargs['msg_id'] == 'subgift':  # in case of subgift
-            total_ = chan_greets.get('gifted_total', '') if resp_kwargs['msg_param_sender_count'] != '0' else ''
-            resp = '{} {}'.format(chan_greets['gift'], total_)
+            if resp_kwargs['chan'] not in mysteries:
+                mysteries[resp_kwargs['chan']] = {}
+            myst = mysteries[resp_kwargs['chan']].get(resp_kwargs['user_id'], None)
+            if myst is not None:
+                myst['recipients'].append(resp_kwargs['msg_param_recipient_user_name'])
+
+                if len(myst['recipients']) >= myst['amount']:
+                    resp_kwargs['recipients_list'] = ', '.join(myst['recipients'])
+                    resp_kwargs['msg_param_mass_gift_count'] = myst['amount']
+                    resp = chan_greets['mysterygifts_recipients']
+                    mysteries[resp_kwargs['chan']].pop(resp_kwargs['user_id'])
+
+            else:
+                total_ = chan_greets.get('gifted_total', '') if resp_kwargs['msg_param_sender_count'] != '0' else ''
+                resp = '{} {}'.format(chan_greets['gift'], total_)
 
         elif resp_kwargs['msg_id'] == 'submysterygift':
-            resp = chan_greets.get('submysterygift', '')
+            #resp = chan_greets.get('submysterygift', '')
+            if resp_kwargs['chan'] not in mysteries:
+                mysteries[resp_kwargs['chan']] = {}
+            mysteries[resp_kwargs['chan']][resp_kwargs['user_id']] = {
+                'amount': resp_kwargs['msg_param_mass_gift_count'],
+                'recipients': []
+            }
 
         else:
             if not resp_kwargs['plan'].lower() == 'prime':
