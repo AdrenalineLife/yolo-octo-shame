@@ -11,11 +11,11 @@ def banall(self, args, msg):
         bantime = 50
         if msg.is_mod:
             try:
-                bantime = float(args[0])
+                bantime = abs(float(args[0]))
             except ValueError:
                 return 'Укажите время бана в минутах первым аргументом'
             bantime = ceil(bantime*60)
-            regex = ' '.join(args)
+            regex = ' '.join(args[1:])
             r = re.compile(regex, flags=re.IGNORECASE)
             res = list({'/timeout {} {}'.format(x.name, bantime) for x in self.chat_messages[msg.chan]
                         if r.search(x.message)})[:70]
