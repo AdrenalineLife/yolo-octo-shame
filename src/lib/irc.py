@@ -117,4 +117,4 @@ class IRC(socket.socket):
         return tags
 
     def check_for_sub(self, usernotice):
-        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub')
+        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub', 'submysterygift')
