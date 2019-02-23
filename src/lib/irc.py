@@ -6,6 +6,8 @@ import time
 import sys
 import threading
 
+from collections import deque
+
 import src.lib.cron
 from src.lib.functions_general import *
 
@@ -14,6 +16,7 @@ class IRC(socket.socket):
     def __init__(self, config):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.config = config
+        self.msg_timestamps = deque(maxlen=99)
         self.resub_pat = re.compile(r'^@badges=.*?;msg-param-months=([0-9]+);.+msg-param-sub-plan=(.+?);.*?system-msg=(.+?)\\s.+? :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
         self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
         self.is_usernotice = re.compile(r'@.+ :tmi\.twitch\.tv USERNOTICE #[a-zA-Z0-9_\\]+.*$')
@@ -30,8 +33,20 @@ class IRC(socket.socket):
     def check_login_status(data):
         return not bool(re.match(r'^:(testserver\.local|tmi\.twitch\.tv) NOTICE \* :Login unsuccessful\r\n$', data))
 
-    def send_message(self, message, channel=None):
-        super().send('PRIVMSG {} :{}\n'.format(channel, message).encode())
+    def check_if_can_send(self): # todo [0]
+        if len(self.msg_timestamps) < self.msg_timestamps.maxlen:
+            return True
+        return time.time() - self.msg_timestamps[0] > 30.2
+
+    # returns True is
+    def send_message(self, message, channel=None) -> bool:
+        if self.check_if_can_send():
+            super().send('PRIVMSG {} :{}\n'.format(channel, message).encode())
+            self.msg_timestamps.append(time.time())
+            return True
+        else:
+            pp('Cannot exceed the global message limit', mtype='warning')
+            return False
 
     def init_irc_socket_object(self, recnct_cnt=5):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
@@ -117,4 +132,5 @@ class IRC(socket.socket):
         return tags
 
     def check_for_sub(self, usernotice):
-        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub', 'submysterygift')
+        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub', 'submysterygift',
+                                            'anonsubgift')

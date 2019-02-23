@@ -194,8 +194,10 @@ class Roboraj(object):
     def send_to_chat(self, result, username='', channel=''):
         resp = result.replace('(sender)', username)
         channel = '#jtv' if self.is_whisper(result) else channel
-        self.irc.send_message(resp, channel)
-        pbot(resp, channel)
+        if self.irc.send_message(resp, channel):
+            pbot(resp, channel)
+            return True
+        return False
 
     def join_channels(self, channels):
         pass  # TODO
@@ -288,9 +290,10 @@ class Roboraj(object):
                     f_.write('\r\n\r\n')
                     f_.close()'''
                     usernotice = self.irc.parse_usernotice(data_line)
+                    print(usernotice)
                     if self.irc.check_for_sub(usernotice):
                         self.sub_greetings(usernotice)
-
+                #continue
                 if self.irc.check_for_message(data_line):
                     msg = Message(**self.irc.parse_message(data_line))
 
@@ -298,6 +301,9 @@ class Roboraj(object):
                         ppi(msg.chan, msg.message, msg.disp_name)
 
                     self.chat_messages[msg.chan].appendleft(msg)
+                    if msg.name == self.config['username'].lower():  # if it is our own message
+                        self.irc.msg_timestamps.append(time.time())
+
                     #continue
 
                     if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
@@ -311,31 +317,34 @@ class Roboraj(object):
 
                                 if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
                                     sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
-                                    self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan)
-                                    pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
+                                    if self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan):
+                                        pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                                 else:
                                     pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
                                     result = self.call_func(command_name, args, msg)
 
                                     if result:
+                                        was_sent = False
                                         if type(result) == list:
                                             for r in result:
-                                                self.send_to_chat(r, msg.disp_name, msg.chan)
+                                                s_ = self.send_to_chat(r, msg.disp_name, msg.chan)
+                                                was_sent = s_ or was_sent
                                         else:
-                                            self.send_to_chat(result, msg.disp_name, msg.chan)
-                                        self.cmd_headers.update_last_used(
-                                            command_name, msg.chan, msg.name, self.is_whisper(result))
+                                            was_sent = self.send_to_chat(result, msg.disp_name, msg.chan)
+                                        if was_sent:
+                                            self.cmd_headers.update_last_used(
+                                                command_name, msg.chan, msg.name, self.is_whisper(result))
                             else:
                                 pp("Invalid number of arguments for '{}'".format(command_name))
 
                         else:
                             if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
                                 sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
-                                self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan)
-                                pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
+                                if self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan):
+                                    pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                             else:
                                 pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
                                 resp = self.cmd_headers.get_return(command_name)
-                                self.cmd_headers.update_last_used(
-                                    command_name, msg.chan, msg.name, self.is_whisper(resp))
-                                self.send_to_chat(resp, msg.disp_name, msg.chan)
+                                if self.send_to_chat(resp, msg.disp_name, msg.chan):
+                                    self.cmd_headers.update_last_used(
+                                        command_name, msg.chan, msg.name, self.is_whisper(resp))
