@@ -12,8 +12,10 @@ class CommandHandler(dict):
     def is_valid_command(self, command):
         return command in self
 
-    def has_correct_args(self, message, command):
-        qty = len(message.split(' ')) - 1
+    def has_correct_args(self, args, command):
+        if not self.returns_command(command):
+            return True
+        qty = len(args)
         return self[command]['argc_min'] <= qty <= self[command]['argc_max']
 
     def is_on_cooldown(self, command, channel):

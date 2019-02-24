@@ -118,6 +118,13 @@ class Roboraj(object):
     def call_func(self, command, args, msg):
         return getattr(self, command)(args, msg)
 
+    # get command response, whether it is a function or just a string
+    def get_command_response(self, command, args, msg):
+        if self.cmd_headers.returns_command(command):
+            return self.call_func(command, args, msg)
+        else:
+            return self.cmd_headers.get_return(command)
+
     def get_ids_by_names(self):
         try:
             resp = self.chans_request.get('https://api.twitch.tv/kraken/users',
@@ -307,44 +314,29 @@ class Roboraj(object):
                     #continue
 
                     if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
-                        command = msg.message
-                        command_name = self.cmd_headers.get_real_name(command.split(' ')[0])
+                        command_name = self.cmd_headers.get_real_name(msg.message.split(' ')[0])
+                        args = msg.message.split(' ')
+                        del args[0]
 
-                        if self.cmd_headers.returns_command(command_name):
-                            if self.cmd_headers.has_correct_args(command, command_name):
-                                args = command.split(' ')
-                                del args[0]
-
-                                if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
-                                    sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
-                                    if self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan):
-                                        pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
-                                else:
-                                    pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
-                                    result = self.call_func(command_name, args, msg)
-
-                                    if result:
-                                        was_sent = False
-                                        if type(result) == list:
-                                            for r in result:
-                                                s_ = self.send_to_chat(r, msg.disp_name, msg.chan)
-                                                was_sent = s_ or was_sent
-                                        else:
-                                            was_sent = self.send_to_chat(result, msg.disp_name, msg.chan)
-                                        if was_sent:
-                                            self.cmd_headers.update_last_used(
-                                                command_name, msg.chan, msg.name, self.is_whisper(result))
-                            else:
-                                pp("Invalid number of arguments for '{}'".format(command_name))
-
-                        else:
+                        if self.cmd_headers.has_correct_args(args, command_name):
                             if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
                                 sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
                                 if self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan):
                                     pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                             else:
                                 pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
-                                resp = self.cmd_headers.get_return(command_name)
-                                if self.send_to_chat(resp, msg.disp_name, msg.chan):
-                                    self.cmd_headers.update_last_used(
-                                        command_name, msg.chan, msg.name, self.is_whisper(resp))
+                                result = self.get_command_response(command_name, args, msg)
+
+                                if result:
+                                    was_sent = False
+                                    if type(result) == list:
+                                        for r in result:
+                                            s_ = self.send_to_chat(r, msg.disp_name, msg.chan)
+                                            was_sent = s_ or was_sent
+                                    else:
+                                        was_sent = self.send_to_chat(result, msg.disp_name, msg.chan)
+                                    if was_sent:
+                                        self.cmd_headers.update_last_used(
+                                            command_name, msg.chan, msg.name, self.is_whisper(result))
+                        else:
+                            pp("Invalid number of arguments for '{}'".format(command_name))
