@@ -319,8 +319,8 @@ class Roboraj(object):
                         del args[0]
 
                         if self.cmd_headers.has_correct_args(args, command_name):
-                            if self.cmd_headers.is_on_cooldown(command_name, msg.chan):
-                                sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg.chan)
+                            if self.cmd_headers.is_on_cooldown(command_name, msg):
+                                sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg)
                                 if self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan):
                                     pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
                             else:
@@ -337,6 +337,6 @@ class Roboraj(object):
                                         was_sent = self.send_to_chat(result, msg.disp_name, msg.chan)
                                     if was_sent:
                                         self.cmd_headers.update_last_used(
-                                            command_name, msg.chan, msg.name, self.is_whisper(result))
+                                            command_name, msg, self.is_whisper(result))
                         else:
                             pp("Invalid number of arguments for '{}'".format(command_name))

@@ -18,22 +18,22 @@ class CommandHandler(dict):
         qty = len(args)
         return self[command]['argc_min'] <= qty <= self[command]['argc_max']
 
-    def is_on_cooldown(self, command, channel):
-        return time.time() - self[command][channel]['last_used'] < self[command]['limit']
+    def is_on_cooldown(self, command, msg):
+        return time.time() - self[command][msg.chan]['last_used'] < self[command]['limit']
 
-    def get_cooldown_remaining(self, command, channel):
-        return round(self[command]['limit'] - (time.time() - self[command][channel]['last_used']))
+    def get_cooldown_remaining(self, command, msg):
+        return round(self[command]['limit'] - (time.time() - self[command][msg.chan]['last_used']))
 
-    def update_last_used(self, command, channel, name, is_whisper):
+    def update_last_used(self, command, msg, is_whisper):
         if self.need_to_update_last_used(command, is_whisper):
-            self[command][channel]['last_used'] = time.time()
-            self[command][channel]['last_used_name'] = name
+            self[command][msg.chan]['last_used'] = time.time()
+            self[command][msg.chan]['last_used_name'] = msg.name
 
     def need_to_update_last_used(self, command, is_whisper: bool):
         return not (is_whisper and self[command].get('whisper_no_cd', False))
 
-    def returns_command(self, name):
-        return self[name]['return'] == 'command'
+    def returns_command(self, command):
+        return self[command]['return'] == 'command'
 
     def get_return(self, command):
         return self[command]['return']
