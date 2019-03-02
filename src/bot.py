@@ -191,7 +191,7 @@ class Roboraj(object):
             save_obj(self.ch_list, 'channel_list')
             time.sleep(31.0)
 
-    def is_whisper(self, response: str) -> bool:
+    def is_whisper(self, response) -> bool:
         is_w = lambda x: x.startswith('/w ') or x.startswith('.w ') or \
                x.startswith('/W ') or x.startswith('.W ')
         if not isinstance(response, str) and isinstance(response, Iterable):
@@ -205,6 +205,15 @@ class Roboraj(object):
             pbot(resp, channel)
             return True
         return False
+
+    def send_messages(self, result, username='', channel=''):
+        result = (result,) if type(result) == str else result
+        if type(result) in (list, tuple, set, deque):
+            sent = [self.send_to_chat(r, username, channel) for r in result]  # list of bool
+            return any(sent)  # True if at least one message was sent
+        else:
+            pp("Type {} is not allowed to be sent in chat".format(type(result)), mtype='error')
+            return False
 
     def join_channels(self, channels):
         pass  # TODO
@@ -236,12 +245,7 @@ class Roboraj(object):
         if not sub_info:
             return None
         resp = self.call_func('!sub_greetings', sub_info, None)
-        if resp:
-            if type(resp) == list:
-                for r in resp:
-                    self.send_to_chat(r, channel=sub_info['chan'])
-            else:
-                self.send_to_chat(resp, channel=sub_info['chan'])
+        self.send_messages(resp, channel=sub_info['chan'])
         self.cmd_headers['!sub_greetings']['time'] = time.time()
 
     def run(self):
@@ -328,13 +332,7 @@ class Roboraj(object):
                                 result = self.get_command_response(command_name, args, msg)
 
                                 if result:
-                                    was_sent = False
-                                    if type(result) == list:
-                                        for r in result:
-                                            s_ = self.send_to_chat(r, msg.disp_name, msg.chan)
-                                            was_sent = s_ or was_sent
-                                    else:
-                                        was_sent = self.send_to_chat(result, msg.disp_name, msg.chan)
+                                    was_sent = self.send_messages(result, msg.disp_name, msg.chan)
                                     if was_sent:
                                         self.cmd_headers.update_last_used(
                                             command_name, msg, self.is_whisper(result))
