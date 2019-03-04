@@ -22,10 +22,10 @@ def pp(message, mtype='INFO'):
         elif mtype == 'WARNING':
             mtype = yel.format(mtype)
     resp = '[{}] [{}] {}'.format(time.strftime('%H:%M:%S', time.localtime()), mtype, message)
-    if mtype in ('ERROR', 'WARNING'):
-        f_ = open(r'input_output\pp.txt', 'at')
-        f_.write(resp + '\r\n')
-        f_.close()
+    # if mtype in ('ERROR', 'WARNING'):
+    #     f_ = open(r'input_output\pp.txt', 'at')
+    #     f_.write(resp + '\r\n')
+    #     f_.close()
     print(resp)
 
 
@@ -36,9 +36,9 @@ def ppi(channel, message, username):
     try:
         print(msg)
     except UnicodeEncodeError as detail:
-        pp('UnicodeEncodeError: %s' % detail, mtype='error')
+        pp('UnicodeEncodeError: {}'.format(detail), mtype='error')
     except UnicodeDecodeError as detail:
-        pp('UnicodeDecodeError: %s' % detail, mtype='error')
+        pp('UnicodeDecodeError: {}'.format(detail), mtype='error')
 
 
 # for printing what the bot sends to chat
@@ -51,9 +51,9 @@ def pbot(message, channel=''):
     try:
         print(msg)  # print(msg.encode(sys.stdout.encoding, errors='replace'))
     except UnicodeEncodeError as detail:
-        pp('UnicodeEncodeError: %s' % detail, mtype='error')
+        pp('UnicodeEncodeError: {}'.format(detail), mtype='error')
     except UnicodeDecodeError as detail:
-        pp('UnicodeDecodeError: %s' % detail, mtype='error')
+        pp('UnicodeDecodeError: {}'.format(detail), mtype='error')
 
 
 def save_obj(obj, name):

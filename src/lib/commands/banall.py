@@ -18,13 +18,16 @@ def banall(self, args, msg):
             regex = ' '.join(args[1:])
             r = re.compile(regex, flags=re.IGNORECASE)
             res = list({'/timeout {} {}'.format(x.name, bantime) for x in self.chat_messages[msg.chan]
-                        if r.search(x.message)})[:70]
+                        if not x.is_mod and r.search(x.message)})[:80]
+            if res:
+                res.append('-{}'.format(len(res)))
             return res
 
     except re.error as e:
-        pp('{} (banall.py)'.format(e), mtype='error')
-        return ''
-    except Exception:
+        pp('Regex error {} (banall.py)'.format(e), mtype='error')
+        return 'Указано неверное регулярное выражение'
+    except Exception as e:
+        pp('{} {} (banall.py)'.format(e.__class__.__name__, e), mtype='error')
         return ''
 
 
