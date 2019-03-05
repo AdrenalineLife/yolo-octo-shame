@@ -22,6 +22,7 @@ from src.res.CommandHandler_class import CommandHandler
 SAY_CD = '/w (sender) Команда будет доступна через {} сек'
 PBOT_ON_CD = 'Command is on cooldown. ({}) ({}) ({}s remaining)'
 PBOT_NOT_ON_CD = 'Command is valid and not on cooldown. ({}) ({})'
+DATA_EMPTY = '<empty>'  # a constant used when socket has nothing to receive
 
 
 class Roboraj(object):
@@ -36,15 +37,16 @@ class Roboraj(object):
         # info about commands
         self.cmd_headers = CommandHandler(c_headers.commands)
 
-        # pass
-        self.chat_messages = {chan: deque(maxlen=400) for chan in self.config['channels']}
+        # stores <maxlen> last messages of chat
+        self.chat_messages = {chan: deque(maxlen=self.config_misc['chat_messages_maxlen'])
+                              for chan in self.config['channels']}
 
         # headers for all API requests
         self.req_headers = {'Client-ID': self.config['Client-ID'],
                             'authorization': self.config['api_token'],
-                            'Accept': "application/vnd.twitchtv.v5+json"}
+                            'Accept': self.config['api_version']}
 
-        # boolean to indicate if Client-ID if identified
+        # boolean to indicate if Client-ID is identified
         self.clientid_identified = False
 
         # session for API requests to get streams info
@@ -199,7 +201,9 @@ class Roboraj(object):
             return all(is_w(m) for m in response)
         return is_w(response)
 
-    def send_to_chat(self, result, username='', channel=''):
+    def send_to_chat(self, result, username='', channel='') -> bool:
+        if not result:
+            return False
         resp = result.replace('(sender)', username)
         channel = '#jtv' if self.is_whisper(result) else channel
         if self.irc.send_message(resp, channel):
@@ -207,7 +211,7 @@ class Roboraj(object):
             return True
         return False
 
-    def send_messages(self, result, username='', channel=''):
+    def send_messages(self, result, username='', channel='') -> bool:
         result = (result,) if type(result) == str else result
         if type(result) in (list, tuple, set, deque):
             sent = [self.send_to_chat(r, username, channel) for r in result]  # list of bool
@@ -267,11 +271,11 @@ class Roboraj(object):
             time.sleep(0.003)
             try:
                 data = self.irc.recv(self.config['socket_buffer_size']).decode().rstrip()
-            except Exception:
-                data = 'empty'
+            except BlockingIOError:
+                data = DATA_EMPTY
 
             if len(data) == 0:
-                pp('Connection was lost, reconnecting.')
+                pp('Connection was lost, reconnecting')
                 self.irc.init_irc_socket_object()
 
             if time.time() - self.cmd_headers['!ragnaros']['time'] >= 7.0:
@@ -287,7 +291,7 @@ class Roboraj(object):
                 self.cmd_headers['!duel']['time'] = time.time()
 
             for data_line in data.split('\r\n'):
-                if self.config_misc['debug'] and data_line != 'empty':
+                if self.config_misc['debug'] and data_line != DATA_EMPTY:
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)

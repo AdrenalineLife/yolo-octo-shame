@@ -21,6 +21,9 @@ config_misc = {
     # twitch has global limit of msg per 30 secs. 100 for mods, much more for known bots
     'global_msg_limit': 99,
 
-    # list of IDs of trusted users. Decide how you will use it yourself!
+    # how many chat messages to store for each channel
+    'chat_messages_maxlen': 400,
+
+    # list of IDs (str) of trusted users. Decide how you will use it yourself!
     'trusted_users': [],
 }

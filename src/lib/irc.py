@@ -8,15 +8,15 @@ import threading
 
 from collections import deque
 
-import src.lib.cron
 from src.lib.functions_general import *
 
 
 class IRC(socket.socket):
-    def __init__(self, config):
+    def __init__(self, config, config_misc):
         super().__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.config = config
-        self.msg_timestamps = deque(maxlen=99)
+        self.config_misc = config_misc
+        self.msg_timestamps = deque(maxlen=self.config_misc['global_msg_limit'])
         self.resub_pat = re.compile(r'^@badges=.*?;msg-param-months=([0-9]+);.+msg-param-sub-plan=(.+?);.*?system-msg=(.+?)\\s.+? :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
         self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
         self.is_usernotice = re.compile(r'@.+ :tmi\.twitch\.tv USERNOTICE #[a-zA-Z0-9_\\]+.*$')
@@ -38,7 +38,7 @@ class IRC(socket.socket):
             return True
         return time.time() - self.msg_timestamps[0] > 30.2
 
-    # returns True is
+    # returns True if message was not stopped by global limit
     def send_message(self, message, channel=None) -> bool:
         if self.check_if_can_send():
             super().send('PRIVMSG {} :{}\n'.format(channel, message).encode())

@@ -3,20 +3,21 @@
 import time
 import pickle
 
+from src.config.config_misc import config_misc
+
+
 red = "\033[01;31m{0}\033[00m"
 grn = "\033[01;36m{0}\033[00m"
 blu = "\033[01;34m{0}\033[00m"
 cya = "\033[01;36m{0}\033[00m"
 yel = "\033[01;33m{0}\033[00m"
 
-clr = False  # Use colouring or not
-
 
 # for printing general information
 def pp(message, mtype='INFO'):
     mtype = mtype.upper()
 
-    if clr:
+    if config_misc['use_logs_coloring']:
         if mtype == "ERROR":
             mtype = red.format(mtype)
         elif mtype == 'WARNING':
@@ -31,7 +32,7 @@ def pp(message, mtype='INFO'):
 
 # for printing chat messages
 def ppi(channel, message, username):
-    username = grn.format(username) if clr else username
+    username = grn.format(username) if config_misc['use_logs_coloring'] else username
     msg = '[{} {}] <{}> {}'.format(time.strftime('%H:%M:%S', time.localtime()), channel, username, message)
     try:
         print(msg)
@@ -43,7 +44,7 @@ def ppi(channel, message, username):
 
 # for printing what the bot sends to chat
 def pbot(message, channel=''):
-    bot = red.format('BOT') if clr else 'BOT'
+    bot = red.format('BOT') if config_misc['use_logs_coloring'] else 'BOT'
     if channel:
         msg = '[{} {}] <{}> {}'.format(time.strftime('%H:%M:%S', time.localtime()), channel, bot, message)
     else:
