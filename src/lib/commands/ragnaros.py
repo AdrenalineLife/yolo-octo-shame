@@ -79,7 +79,7 @@ except FileNotFoundError:
     ragn_list = [Ragnaros(x) for x in required_ch]
 except (pickle.PickleError, AttributeError, IndexError, EOFError):
     ragn_list = [Ragnaros(x) for x in required_ch]
-    pp("Could not load ragnaros file", 'error')
+    pp("Could not load ragnaros file", mtype='error')
 else:
     loaded_ragn = [x.name for x in ragn_list]
     for x in required_ch:
@@ -112,7 +112,7 @@ def ragnaros(self, args, msg):
             return [
                 '/color ' + ragn.color,
                 get_phrase(say_is_on, ragn.name) if ragn.turned_on else get_phrase(say_is_off, ragn.name),
-                '/color ' + self.config['color']
+                '/color ' + self.config_misc['color']
             ]
 
         # setting some options

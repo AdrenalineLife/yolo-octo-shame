@@ -4,20 +4,26 @@ config = {
     # details required to login to twitch IRC server
     'server': 'irc.chat.twitch.tv',
     'port': 6667,
-    'username': '',
-    'oauth_password': '',  # get this from http://twitchapps.com/tmi/
-    'Client-ID': '',  # register an app in your twitch account settings
+    'username': 'Adrenaline_Life',
+    'oauth_password': 'oauth:iyprc9k2p0cofr40t611vusirp2g5t',  # get this from http://twitchapps.com/tmi/
+    'Client-ID': 'rplsl1y05kzxaegno8q2jvhgicco5kh',  # register an app in your twitch account settings
+    'api_token': 'OAuth zj9mn5tnryavzew39sx1tkw1c76ojo',
+
+    #oauth:chu05sxlp6bupjrjsurjn8vb1n0fpv
+    #80rpzihvfvrtcj9x7w0ac0wzgg668zg
+    #OAuth 8oukuo9mtu28arn204a190tiv6ht3g
 
     # color of the bot in chat
     'color': 'Blue',
 
     # channels to join
-    'channels': ['#chan1', '#chan2'],  # chan name starts with '#'
+    'channels': ['#adrenaline_life', '#a_o_w', '#nastjadd', #'#gn_gg', '#kvyzee', '#dakotaz', '#thijs', '#playoverwatch_kr',
+                 '#twitchpresents'],  # chan name starts with '#'
 
     # if set to true will display raw data received
     'debug': False,
 
-    'cron': { #  CRON IS NOT SUPPORTED ATM
+    'cron': {  # CRON IS NOT SUPPORTED ATM
         '#channel_one': {
             'run_cron': False,
         # set this to false if you want don't want to run the cronjob but you want to preserve the messages etc

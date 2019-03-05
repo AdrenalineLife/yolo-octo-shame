@@ -122,7 +122,7 @@ def duel(self, args, msg):
                     '/timeout {0} {1}'.format(msg.name, arg2),
                     '/color Red',
                     say_suicide.format(msg.disp_name),
-                    '/color ' + self.config['color']
+                    '/color ' + self.config_misc['color']
                 ]
 
             # accepting a duel
@@ -137,7 +137,7 @@ def duel(self, args, msg):
                         '/timeout {0} {1}'.format(loser, duel_.ban_time),
                         '/color ' + color_,
                         say_duel_result.format(loser, winner),
-                        '/color ' + self.config['color']
+                        '/color ' + self.config_misc['color']
                     ]
                 else:
                     return ''

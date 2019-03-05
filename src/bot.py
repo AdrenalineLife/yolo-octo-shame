@@ -25,9 +25,10 @@ PBOT_NOT_ON_CD = 'Command is valid and not on cooldown. ({}) ({})'
 
 
 class Roboraj(object):
-    def __init__(self, config):
+    def __init__(self, config, config_misc):
         self.config = config
-        self.irc = irc_.IRC(config)
+        self.config_misc = config_misc
+        self.irc = irc_.IRC(config, config_misc)
 
         # list of channels
         self.ch_list = list()
@@ -286,7 +287,7 @@ class Roboraj(object):
                 self.cmd_headers['!duel']['time'] = time.time()
 
             for data_line in data.split('\r\n'):
-                if self.config['debug'] and data_line != 'empty':
+                if self.config_misc['debug'] and data_line != 'empty':
                     print(data_line)
 
                 self.irc.check_for_ping(data_line)
@@ -308,7 +309,7 @@ class Roboraj(object):
                 if self.irc.check_for_message(data_line):
                     msg = Message(**self.irc.parse_message(data_line))
 
-                    if not self.config['debug']:
+                    if self.config_misc['print_chat_msgs'] and not self.config_misc['debug']:
                         ppi(msg.chan, msg.message, msg.disp_name)
 
                     self.chat_messages[msg.chan].appendleft(msg)
