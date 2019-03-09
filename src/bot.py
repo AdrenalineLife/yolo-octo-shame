@@ -22,6 +22,7 @@ from src.res.CommandHandler_class import CommandHandler
 SAY_CD = '/w (sender) Команда будет доступна через {} сек'
 PBOT_ON_CD = 'Command is on cooldown. ({}) ({}) ({}s remaining)'
 PBOT_NOT_ON_CD = 'Command is valid and not on cooldown. ({}) ({})'
+PBOT_INVALID_ARGUMENTS = "Invalid number of arguments for '{}'"
 DATA_EMPTY = '<empty>'  # a constant used when socket has nothing to receive
 
 
@@ -76,8 +77,10 @@ class Roboraj(object):
     def load_command_funcs(self):
         missing_func = []
         missing_module = []
+        whiteblacklist = []
         for cmd_name, command in self.cmd_headers.items():
             if 'ref' not in command:
+                # load corresponding function if it returns command
                 if command['return'] == 'command':
                     try:
                         module_ = importlib.import_module('src.lib.commands.' + cmd_name[1:])
@@ -86,17 +89,27 @@ class Roboraj(object):
                         missing_module.append(cmd_name)
                     except AttributeError:
                         missing_func.append(cmd_name)
+
+                # commands that don't have a 'return'
                 if 'return' not in command or not command['return']:
-                    pp("'" + cmd_name + "' command does not have 'return'", mtype='WARNING')
+                    pp("{} command does not have 'return'".format(cmd_name), mtype='WARNING')
                     missing_func.append(cmd_name)
 
+                # commands that have both whitelists and blacklists
+                if 'whitelist' in command and 'blacklist' in command:
+                    whiteblacklist.append(cmd_name)
+
         if missing_module:
-            pp('No module found: ' + ', '.join(missing_module), mtype='WARNING')
+            pp('No module found: {}'.format(', '.join(missing_module)), mtype='WARNING')
         if missing_func:
-            pp('No function found: ' + ', '.join(missing_func), mtype='WARNING')
+            pp('No function found: {}'.format(', '.join(missing_func)), mtype='WARNING')
         # deleting commands from dict which we did not find
         for f in missing_func + missing_module:
             self.cmd_headers.pop(f, None)
+
+        if whiteblacklist:
+            pp('Commands {} have both "whitelist" and "blacklist". Note that blacklist has priority'.format(
+                ', '.join(whiteblacklist)), mtype='warning')
 
         for cmd_name in self.cmd_headers:
             if 'ref' not in self.cmd_headers[cmd_name]:
@@ -306,10 +319,10 @@ class Roboraj(object):
                     f_.write('\r\n\r\n')
                     f_.close()'''
                     usernotice = self.irc.parse_usernotice(data_line)
-                    print(usernotice)
+                    #print(usernotice)
                     if self.irc.check_for_sub(usernotice):
                         self.sub_greetings(usernotice)
-                #continue
+
                 if self.irc.check_for_message(data_line):
                     msg = Message(**self.irc.parse_message(data_line))
 
@@ -322,7 +335,7 @@ class Roboraj(object):
 
                     #continue
 
-                    if self.cmd_headers.is_valid_command(msg.message.split(' ')[0]):
+                    if self.cmd_headers.is_valid_command(msg.message.split(' ')[0], msg):
                         command_name = self.cmd_headers.get_real_name(msg.message.split(' ')[0])
                         args = msg.message.split(' ')
                         del args[0]
@@ -330,16 +343,16 @@ class Roboraj(object):
                         if self.cmd_headers.has_correct_args(args, command_name):
                             if self.cmd_headers.is_on_cooldown(command_name, msg):
                                 sec_remaining = self.cmd_headers.get_cooldown_remaining(command_name, msg)
-                                if self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan):
-                                    pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
+                                pbot(PBOT_ON_CD.format(command_name, msg.disp_name, sec_remaining), msg.chan)
+                                if self.cmd_headers.need_to_notify_cd(command_name, msg):
+                                    self.send_to_chat(SAY_CD.format(sec_remaining), msg.disp_name, msg.chan)
                             else:
                                 pbot(PBOT_NOT_ON_CD.format(command_name, msg.disp_name), msg.chan)
                                 result = self.get_command_response(command_name, args, msg)
 
-                                if result:
-                                    was_sent = self.send_messages(result, msg.disp_name, msg.chan)
-                                    if was_sent:
-                                        self.cmd_headers.update_last_used(
-                                            command_name, msg, self.is_whisper(result))
+                                was_sent = self.send_messages(result, msg.disp_name, msg.chan)
+                                if was_sent:
+                                    self.cmd_headers.update_last_used(
+                                        command_name, msg, self.is_whisper(result))
                         else:
-                            pp("Invalid number of arguments for '{}'".format(command_name))
+                            pp(PBOT_INVALID_ARGUMENTS.format(command_name))
