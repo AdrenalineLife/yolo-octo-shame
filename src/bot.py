@@ -7,7 +7,9 @@ Developed by Aidan Thomson <aidraj0@gmail.com>
 import importlib
 import threading
 import requests
+import traceback
 import json
+import os.path
 from collections import deque, Iterable
 
 import src.lib.irc as irc_
@@ -132,7 +134,19 @@ class Roboraj(object):
             self.cmd_headers.pop(f, None)
 
     def call_func(self, command, args, msg):
-        return getattr(self, command)(args, msg)
+        try:
+            return getattr(self, command)(args, msg)
+        except Exception as e:
+            pp('Exception while calling function "{}". {}: {}'.format(
+                command, e.__class__.__name__, e), mtype='error')
+
+            report = '{time} {cmd} {msg}\r\n\r\n{tb}{sep}\r\n'
+            with open(os.path.join('input_output', 'func_exceptions.txt'), 'at', encoding='utf8') as f_:
+                f_.write(report.format(time=time.strftime('%d.%m.%y %H:%M:%S', time.localtime()),
+                                       cmd=command,
+                                       msg=msg,
+                                       tb=traceback.format_exc(),
+                                       sep='=' * 35))
 
     # get command response, whether it is a function or just a string
     def get_command_response(self, command, args, msg):
@@ -225,6 +239,8 @@ class Roboraj(object):
         return False
 
     def send_messages(self, result, username='', channel='') -> bool:
+        if result is None:
+            return False
         result = (result,) if type(result) == str else result
         if type(result) in (list, tuple, set, deque):
             sent = [self.send_to_chat(r, username, channel) for r in result]  # list of bool
