@@ -33,8 +33,11 @@ class CommandHandler(dict):
     def is_on_cooldown(self, command, msg):
         if msg.is_mod and self[command].get('mods_ignore_cd', False):
             return False
-        if msg.badges.get('subscriber', 0) >= self[command].get('subs_ignore_cd', 0):
-            return False
+        
+        subs_ignore = self[command].get('subs_ignore_cd', None)
+        if subs_ignore is not None:
+            if msg.badges.get('subscriber', 0) >= subs_ignore:
+                return False
         return time.time() - self[command][msg.chan]['last_used'] < self[command]['limit']
 
     def get_cooldown_remaining(self, command, msg):
