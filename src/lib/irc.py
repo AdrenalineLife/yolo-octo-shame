@@ -17,8 +17,7 @@ class IRC(socket.socket):
         self.config = config
         self.config_misc = config_misc
         self.msg_timestamps = deque(maxlen=self.config_misc['global_msg_limit'])
-        self.resub_pat = re.compile(r'^@badges=.*?;msg-param-months=([0-9]+);.+msg-param-sub-plan=(.+?);.*?system-msg=(.+?)\\s.+? :tmi\.twitch\.tv USERNOTICE (#[a-zA-Z0-9_\\]+).*$')
-        self.is_msg_pat = re.compile(r'^@badges=.*;user-type=.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
+        self.is_msg_pat = re.compile(r'^@.* :[a-zA-Z0-9_\\]+![a-zA-Z0-9_\\]+@[a-zA-Z0-9_\\]+(\.tmi\.twitch\.tv|\.testserver\.local) PRIVMSG #[a-zA-Z0-9_]+ :.+$')
         self.is_usernotice = re.compile(r'@.+ :tmi\.twitch\.tv USERNOTICE #[a-zA-Z0-9_\\]+.*$')
 
     @staticmethod
@@ -128,9 +127,8 @@ class IRC(socket.socket):
             chan, message = sec, ''
         itr = (x.split('=') for x in tags.lstrip('@').split(';'))
         tags = {key.replace('-', '_'): value for key, value in itr}
-        tags.update(chan=chan, msg=message)
+        tags.update(name=tags['login'], chan=chan, msg=message)
         return tags
 
     def check_for_sub(self, usernotice):
-        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub', 'submysterygift',
-                                            'anonsubgift')
+        return usernotice.get('msg_id') in ('subgift', 'sub', 'resub', 'submysterygift', 'anonsubgift')
