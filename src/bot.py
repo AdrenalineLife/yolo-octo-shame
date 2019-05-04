@@ -17,6 +17,7 @@ import src.lib.command_headers as c_headers
 
 from src.lib.functions_general import *
 from src.res.Message_class import Message
+from src.res.Usernotice_class import Usernotice
 from src.res.Channel_class import Channel
 from src.res.CommandHandler_class import CommandHandler
 
@@ -218,8 +219,18 @@ class Roboraj(object):
                     continue
                 ch.check_state()
 
+                '''
+                link_chatters = 'http://tmi.twitch.tv/group/user/{}/chatters'
+                try:
+                    chatters = requests.get(link_chatters.format(ch.name), timeout=5).json()['chatters']
+                    for x in chatters.values():
+                        ch.unique_users.update(x)
+                except (requests.RequestException, KeyError):
+                    pp('error')
+                '''
+
             save_obj(self.ch_list, 'channel_list')
-            time.sleep(31.0)
+            time.sleep(45.0)
 
     def is_whisper(self, response) -> bool:
         is_w = lambda x: x.startswith('/w ') or x.startswith('.w ') or \
@@ -302,6 +313,9 @@ class Roboraj(object):
                 data = self.irc.recv(self.config['socket_buffer_size']).decode().rstrip()
             except BlockingIOError:
                 data = DATA_EMPTY
+            except UnicodeDecodeError as e:
+                data = DATA_EMPTY
+                pp('UnicodeDecodeError: {}'.format(e), mtype='ERROR')
 
             if len(data) == 0:
                 pp('Connection was lost, reconnecting')
@@ -333,9 +347,11 @@ class Roboraj(object):
                     f_ = open('userno.txt', 'at', encoding='utf8')
                     f_.write(str(uno))
                     f_.write('\r\n\r\n')
-                    f_.close()'''
+                    f_.close()
+                    usernotice = Usernotice(**self.irc.parse_usernotice(data_line))
+                    print(usernotice.msg_id, usernotice.other_tags)'''
+
                     usernotice = self.irc.parse_usernotice(data_line)
-                    #print(usernotice)
                     if self.irc.check_for_sub(usernotice):
                         self.sub_greetings(usernotice)
 
